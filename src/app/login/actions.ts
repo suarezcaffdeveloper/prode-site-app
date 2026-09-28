@@ -23,13 +23,19 @@ export async function iniciarSesion(_prevState: unknown, formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: traducirError(error.message) };
   }
 
-  redirect("/ligas");
+  const { data: usuario } = await supabase
+    .from("usuarios")
+    .select("rol")
+    .eq("id", data.user.id)
+    .single();
+
+  redirect(usuario?.rol === "admin" ? "/admin/ligas" : "/ligas");
 }
 
 export async function iniciarSesionConGoogle() {

@@ -70,6 +70,9 @@ export function MarcadorPartido({ estado }: { estado: EstadoPartido }) {
   );
 }
 
+// Resultado oficial de un partido ya jugado: chip sólido en el verde de
+// marca (nunca el negro/verde flúor del viejo tablero de estadio, retirado
+// de todo el sistema).
 export function MarcadorResultado({
   golesLocal,
   golesVisitante,
@@ -78,7 +81,37 @@ export function MarcadorResultado({
   golesVisitante: number;
 }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-md bg-pitch-900 px-3 py-1.5 font-mono text-base font-bold tabular-nums text-lime-300">
+    <span className="inline-flex items-center gap-2 rounded-md bg-pitch-700 px-3 py-1.5 font-mono text-base font-bold tabular-nums text-chalk-0">
+      <span>{golesLocal}</span>
+      <span className="text-chalk-0/50">–</span>
+      <span>{golesVisitante}</span>
+    </span>
+  );
+}
+
+// Deliberadamente NO usa el chip sólido de "resultado oficial" de arriba:
+// mostrar el propio pronóstico con esa misma estética hacía pensar que
+// cargar un prode escribía el resultado real del partido.
+export function MarcadorPronostico({
+  golesLocal,
+  golesVisitante,
+  acertado = false,
+}: {
+  golesLocal: number;
+  golesVisitante: number;
+  acertado?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-md border px-3 py-1 font-mono text-base font-bold tabular-nums text-pitch-700 ${
+        acertado ? "border-pitch-500 bg-lime-400/25" : "border-line-strong bg-chalk-0"
+      }`}
+      title={
+        acertado
+          ? "¡Acertaste este resultado!"
+          : "Tu pronóstico — no es el resultado oficial del partido"
+      }
+    >
       <span>{golesLocal}</span>
       <span className="text-ink-400">–</span>
       <span>{golesVisitante}</span>

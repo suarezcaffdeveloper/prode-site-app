@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { MarcadorEstado, MarcadorCodigo } from "@/components/ui/marcador";
-import { suscribirse, crearGrupo, unirseAGrupo } from "./actions";
+import { crearGrupo, unirseAGrupo } from "./actions";
 import { CrearGrupoForm, UnirseGrupoForm } from "./grupo-forms";
+import { PlanesSuscripcion } from "./planes-suscripcion";
+import { LigaHero } from "./liga-hero";
 
 export default async function LigaDetallePage({
   params,
@@ -36,6 +38,17 @@ export default async function LigaDetallePage({
 
   const tieneSuscripcionActiva = membresia?.estado_suscripcion === "activa";
 
+  const { data: activaData } = await supabase.rpc("jornada_activa", { p_liga_id: id });
+  const activa =
+    (activaData as { jornada: number; hora_cierre: string | null }[] | null)?.[0] ?? null;
+  const estadoJornadaActiva = !activa
+    ? "sin_jornada"
+    : activa.hora_cierre === null
+      ? "bloqueada"
+      : new Date(activa.hora_cierre) <= new Date()
+        ? "cerrada"
+        : "abierta";
+
   // RLS en "grupos" ya limita el resultado a los subgrupos donde el usuario
   // es creador o miembro (ver policy grupos_select_miembro_o_admin), así que
   // este select no necesita un filtro adicional de membresía.
@@ -47,58 +60,65 @@ export default async function LigaDetallePage({
     : { data: null };
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
-      <div>
-        <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
-          LIGA
-        </p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-          {liga.nombre}
-        </h1>
-        {liga.descripcion && (
-          <p className="mt-2 text-sm text-ink-600">{liga.descripcion}</p>
-        )}
-        <Link
-          href={`/ligas/${id}/partidos`}
-          className="mt-2 inline-block text-sm font-medium text-pitch-700 hover:underline"
-        >
-          Ver fixture →
-        </Link>
-      </div>
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+      <LigaHero
+        liga={liga}
+        ligaId={id}
+        jornada={activa?.jornada ?? null}
+        estadoJornada={estadoJornadaActiva}
+      />
 
-      <Card className="flex flex-col gap-4 p-6">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-ink-900">Tu suscripción</p>
+      {liga.descripcion && (
+        <p className="-mt-2 text-sm text-ink-600">{liga.descripcion}</p>
+      )}
+
+      {tieneSuscripcionActiva && (
+        <Link
+          href={`/ligas/${id}/pronosticos`}
+          className="-mt-2 text-sm font-medium text-pitch-700 hover:underline"
+        >
+          Cargar tus prodes →
+        </Link>
+      )}
+
+      <Card className="flex flex-col gap-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lime-400/25 text-pitch-700"
+              aria-hidden="true"
+            >
+              <Info className="h-4 w-4" />
+            </span>
+            <p className="text-sm font-medium text-ink-900">Tu suscripción</p>
+          </div>
           {membresia && <MarcadorEstado estado={membresia.estado_suscripcion} />}
         </div>
 
         {!membresia && (
-          <>
-            <p className="text-sm text-ink-600">
-              Todavía no pediste sumarte a esta liga.
-            </p>
-            <form action={suscribirse.bind(null, liga.id)}>
-              <Button type="submit">Quiero suscribirme</Button>
-            </form>
-          </>
+          <p className="text-sm text-ink-600">
+            Todavía no elegiste un plan para esta liga. Seleccioná una opción
+            para empezar a pronosticar.
+          </p>
         )}
 
         {membresia?.estado_suscripcion === "pendiente" && (
           <p className="rounded-lg bg-amber-500/10 p-4 text-sm text-amber-700">
-            Tu solicitud está pendiente de confirmación. Coordiná el pago con
-            el admin de la liga fuera de la app; en cuanto lo confirme, tu
-            suscripción pasa a <strong>activa</strong> y vas a poder crear o
-            unirte a subgrupos.
+            Ya recibimos tu comprobante y lo estamos revisando. En cuanto lo
+            confirmemos, tu suscripción pasa a <strong>activa</strong> y vas a
+            poder cargar tus pronósticos y crear o unirte a subgrupos.
           </p>
         )}
 
         {membresia?.estado_suscripcion === "inactiva" && (
           <p className="rounded-lg bg-coral-500/10 p-4 text-sm text-coral-700">
-            Tu suscripción está inactiva. Contactá al admin de la liga para
-            reactivarla.
+            Tu suscripción está inactiva. Elegí un plan de nuevo y subí el
+            comprobante para reactivarla.
           </p>
         )}
       </Card>
+
+      {!tieneSuscripcionActiva && <PlanesSuscripcion ligaId={liga.id} />}
 
       {tieneSuscripcionActiva && (
         <div className="flex flex-col gap-6">

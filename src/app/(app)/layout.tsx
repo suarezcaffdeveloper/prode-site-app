@@ -15,9 +15,15 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  // Aislamiento de paneles: un admin nunca ve las pantallas de usuario
+  // normal. Si necesita probar como usuario, usa otra cuenta.
+  if (usuario.rol === "admin") {
+    redirect("/admin/ligas");
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
-      <AppHeader esAdmin={usuario.rol === "admin"} />
+      <AppHeader usuario={usuario} />
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
         {children}
       </main>

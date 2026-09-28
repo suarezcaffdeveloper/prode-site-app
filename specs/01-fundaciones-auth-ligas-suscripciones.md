@@ -108,12 +108,14 @@ Conventions:
 
 ## Acceptance criteria
 
+> **Nota (2026-09-26):** el criterio de "pedir suscribirse" de abajo quedó **superseded por SPEC 06**, que reemplaza el botón simple "Quiero suscribirme" por la elección de un plan + carga de comprobante. El resto de esta spec (registro, catálogo de ligas, subgrupos) sigue vigente sin cambios.
+
 - [ ] Un usuario puede registrarse con email/password y queda logueado.
 - [ ] Un usuario puede iniciar sesión con Google OAuth.
 - [ ] Al registrarse se crea automáticamente una fila en `usuarios` con rol `usuario`.
 - [ ] Un admin (rol seteado a mano en la base) puede crear una liga desde el panel de admin.
 - [ ] Un usuario logueado ve el catálogo de ligas activas.
-- [ ] Un usuario puede pedir suscribirse a una liga y su membresía queda en estado `pendiente`.
+- [ ] ~~Un usuario puede pedir suscribirse a una liga y su membresía queda en estado `pendiente`.~~ Ver SPEC 06.
 - [ ] El admin puede cambiar el estado de suscripción de un usuario a `activa` desde el panel.
 - [ ] Un usuario con suscripción `activa` en una liga puede crear un subgrupo y recibe un código corto de invitación.
 - [ ] Otro usuario con suscripción `activa` en la misma liga puede unirse al subgrupo ingresando el código.

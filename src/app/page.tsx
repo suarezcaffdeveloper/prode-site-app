@@ -1,11 +1,9 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getUsuarioActual } from "@/lib/usuario-actual";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const usuario = await getUsuarioActual();
 
-  redirect(user ? "/ligas" : "/login");
+  if (!usuario) redirect("/login");
+  redirect(usuario.rol === "admin" ? "/admin/ligas" : "/ligas");
 }

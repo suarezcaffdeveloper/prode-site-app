@@ -4,23 +4,87 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { generarCodigoInvitacion } from "@/lib/codigo-invitacion";
+import { obtenerPlan } from "@/lib/planes";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function suscribirse(ligaId: string) {
+type State = { error?: string };
+type ElegirPlanState = { error?: string; success?: boolean };
+
+const COMPROBANTE_TAMANIO_MAXIMO = 5 * 1024 * 1024; // 5 MB
+
+async function subirComprobante(
+  supabase: SupabaseClient,
+  usuarioId: string,
+  ligaId: string,
+  comprobante: File,
+): Promise<string | null> {
+  const extension = comprobante.name.split(".").pop();
+  const path = `${usuarioId}/${ligaId}/${crypto.randomUUID()}${extension ? `.${extension}` : ""}`;
+
+  const { error } = await supabase.storage
+    .from("comprobantes")
+    .upload(path, comprobante);
+  if (error) return null;
+
+  return path;
+}
+
+export async function elegirPlan(
+  ligaId: string,
+  planSlug: string,
+  _prevState: ElegirPlanState,
+  formData: FormData,
+): Promise<ElegirPlanState> {
+  const plan = obtenerPlan(planSlug);
+  if (!plan) {
+    return { error: "Ese plan no existe. Volvé a intentar." };
+  }
+
+  const comprobante = formData.get("comprobante");
+  if (!(comprobante instanceof File) || comprobante.size === 0) {
+    return { error: "Subí una imagen del comprobante." };
+  }
+  if (!comprobante.type.startsWith("image/")) {
+    return { error: "El archivo debe ser una imagen." };
+  }
+  if (comprobante.size > COMPROBANTE_TAMANIO_MAXIMO) {
+    return { error: "La imagen es demasiado pesada (máximo 5 MB)." };
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return { error: "Tu sesión expiró. Volvé a iniciar sesión." };
 
-  if (!user) return;
+  const comprobantePath = await subirComprobante(supabase, user.id, ligaId, comprobante);
+  if (!comprobantePath) {
+    return { error: "No pudimos subir el comprobante. Intentá de nuevo." };
+  }
 
-  await supabase
-    .from("membresias_liga")
-    .insert({ usuario_id: user.id, liga_id: ligaId });
+  // TEMPORAL (ver migración 20260926140000_temp_auto_activar_suscripcion):
+  // mientras no haya integración real de pago ni revisión manual del
+  // comprobante, se activa la suscripción directamente al elegir un plan,
+  // para poder probar el flujo de créditos/pronósticos sin esperar al admin.
+  // Revertir a "pendiente" cuando se implemente la corroboración real.
+  //
+  // activar_suscripcion_liga (20260927120000) activa la membresía y otorga
+  // el lote de créditos del plan en la misma transacción: son dos escrituras
+  // (membresias_liga + creditos_lotes) que tienen que ocurrir juntas, nunca
+  // una sin la otra.
+  const { error } = await supabase.rpc("activar_suscripcion_liga", {
+    p_liga_id: ligaId,
+    p_plan_slug: plan.slug,
+    p_comprobante_path: comprobantePath,
+  });
+
+  if (error) {
+    return { error: "No pudimos registrar tu solicitud. Intentá de nuevo." };
+  }
 
   revalidatePath(`/ligas/${ligaId}`);
+  return { success: true };
 }
-
-type State = { error?: string };
 
 export async function crearGrupo(
   ligaId: string,
