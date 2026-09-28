@@ -1,5 +1,5 @@
 -- ============================================================================
--- SPEC 11 — Pago por transferencia y verificación automática de comprobante
+-- SPEC 12 — Pago por transferencia y verificación automática de comprobante
 -- ============================================================================
 -- Solicitudes de pago (una por intento de compra de un plan), ledger de
 -- movimientos de la cuenta de Mercado Pago del prode y las funciones que

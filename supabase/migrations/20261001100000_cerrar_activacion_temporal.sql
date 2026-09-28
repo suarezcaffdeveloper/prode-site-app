@@ -1,5 +1,5 @@
 -- ============================================================================
--- Cierra la activación temporal de suscripciones (SPEC 11)
+-- Cierra la activación temporal de suscripciones (SPEC 12)
 -- ============================================================================
 -- Hasta ahora, cualquier usuario autenticado podía activarse una suscripción
 -- sin pagar por tres vías, todas introducidas solo para poder probar el flujo

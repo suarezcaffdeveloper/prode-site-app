@@ -1,6 +1,6 @@
 # SPEC 06 — Planes de Suscripción (Visual) y Carga de Comprobante
 
-> **Status:** Implementado (el flujo de comprobante y la activación temporal fueron reemplazados por SPEC 11) · **Depends on:** SPEC 01 · **Date:** 2026-09-26
+> **Status:** Implementado (el flujo de comprobante y la activación temporal fueron reemplazados por SPEC 12) · **Depends on:** SPEC 01 · **Date:** 2026-09-26
 > **Objective:** Reemplazar el botón simple "Quiero suscribirme" (SPEC 01) por una experiencia visual completa: mostrar los 3 planes de la plataforma en la página de la liga, y al elegir uno, explicar el proceso y permitir subir un comprobante de transferencia. El motor real de créditos/pronósticos (SPEC 04/05) sigue sin implementarse; esta spec es un paso intermedio para validar la experiencia de compra antes de construirlo.
 
 ## Scope

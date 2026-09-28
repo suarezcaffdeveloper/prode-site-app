@@ -11,7 +11,7 @@ import {
 import { buscarPagosRecientes, type MovimientoNormalizado } from "@/lib/mercadopago";
 import { exigirRemitente, obtenerDatosCuenta } from "@/lib/pago-config";
 
-// Orquesta la verificación de una solicitud de pago (SPEC 11): lee el
+// Orquesta la verificación de una solicitud de pago (SPEC 12): lee el
 // comprobante con IA (una sola vez, se guarda), busca el movimiento en la
 // cuenta de Mercado Pago, aplica las reglas de conciliar() y decide:
 // aprobar, seguir esperando el movimiento o derivar a revisión manual.

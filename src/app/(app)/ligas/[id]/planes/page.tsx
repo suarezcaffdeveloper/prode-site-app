@@ -53,7 +53,7 @@ export default async function LigaPlanesPage({
 
   const tieneSuscripcionActiva = membresia?.estado_suscripcion === "activa";
 
-  // Último intento de compra del usuario en esta liga (SPEC 11). Se piden solo
+  // Último intento de compra del usuario en esta liga (SPEC 12). Se piden solo
   // las columnas que el usuario puede leer: el detalle interno de la
   // verificación no se le expone.
   const { data: ultimaSolicitud } = await supabase

@@ -2,9 +2,9 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 // Cliente mínimo de la API de Mercado Pago para leer los movimientos de la
-// cuenta dedicada al prode (SPEC 11). Solo lectura; sin dependencias nuevas.
+// cuenta dedicada al prode (SPEC 12). Solo lectura; sin dependencias nuevas.
 //
-// IMPORTANTE (spike de SPEC 11, paso 0): la forma exacta en que Mercado Pago
+// IMPORTANTE (spike de SPEC 12, paso 0): la forma exacta en que Mercado Pago
 // informa el remitente de una transferencia recibida por alias/CVU (nombre,
 // documento) no está confirmada en la documentación. `normalizarPago` prueba
 // varias ubicaciones conocidas y guarda el payload completo en `raw` para

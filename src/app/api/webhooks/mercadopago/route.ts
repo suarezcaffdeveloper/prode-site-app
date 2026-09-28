@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { obtenerPago, validarFirmaWebhook } from "@/lib/mercadopago";
 import { conciliarIngreso, guardarMovimiento } from "@/lib/verificar-pago";
 
-// Webhook de Mercado Pago (SPEC 11). Cada aviso de pago se valida por firma,
+// Webhook de Mercado Pago (SPEC 12). Cada aviso de pago se valida por firma,
 // se consulta el detalle por API (el aviso solo trae el id), se guarda en el
 // ledger de movimientos y se re-evalúan las solicitudes que esperaban ese monto.
 // Es idempotente: Mercado Pago reintenta y puede avisar dos veces el mismo pago.

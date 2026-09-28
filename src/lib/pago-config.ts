@@ -18,7 +18,7 @@ export function obtenerDatosCuenta(): DatosCuenta | null {
 }
 
 // La regla R5 (remitente) puede relajarse si Mercado Pago no informa quién
-// transfirió (ver "Spike" de SPEC 11). Por defecto es obligatoria.
+// transfirió (ver "Spike" de SPEC 12). Por defecto es obligatoria.
 export function exigirRemitente(): boolean {
   return process.env.PAGO_EXIGIR_REMITENTE !== "false";
 }

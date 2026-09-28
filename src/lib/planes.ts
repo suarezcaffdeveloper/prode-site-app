@@ -14,7 +14,7 @@ export interface Plan {
 // Los slugs anticipan los nombres que va a tener la tabla `planes` real de
 // SPEC 04, para no tener que reconciliar nomenclatura cuando se implemente.
 // Los datos de la cuenta que cobra (alias, CBU, titular) ya no viven acá: salen
-// de variables de entorno (ver src/lib/pago-config.ts, SPEC 11).
+// de variables de entorno (ver src/lib/pago-config.ts, SPEC 12).
 
 export const PLANES: Plan[] = [
   {

@@ -1,5 +1,5 @@
 // Reglas determinísticas que deciden si un comprobante + un movimiento de la
-// cuenta de Mercado Pago justifican acreditar los prodes (SPEC 11). Es una
+// cuenta de Mercado Pago justifican acreditar los prodes (SPEC 12). Es una
 // función pura, sin acceso a red ni a la base: la IA solo aporta la extracción
 // del comprobante y jamás decide si se aprueba.
 

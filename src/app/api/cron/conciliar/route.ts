@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sincronizarMovimientos, verificarPendientes } from "@/lib/verificar-pago";
 
-// Red de seguridad de SPEC 11: corre cada pocos minutos (cron del hosting o un
+// Red de seguridad de SPEC 12: corre cada pocos minutos (cron del hosting o un
 // cron HTTP externo) y, con o sin webhook, sincroniza los pagos recientes de la
 // cuenta de Mercado Pago, re-evalúa las solicitudes que esperan su
 // movimiento y vence las reservas de monto de más de 48 horas.

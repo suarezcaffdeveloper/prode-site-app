@@ -5,7 +5,7 @@ import { cerrarSesion } from "@/lib/auth-actions";
 import { createClient } from "@/lib/supabase/server";
 
 export async function AdminHeader() {
-  // Pagos que el sistema no pudo verificar y esperan una decisión (SPEC 11).
+  // Pagos que el sistema no pudo verificar y esperan una decisión (SPEC 12).
   const supabase = await createClient();
   const { count: pagosPendientes } = await supabase
     .from("solicitudes_pago")

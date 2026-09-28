@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { COMPROBANTE_TAMANIO_MAXIMO, detectarImagen } from "@/lib/comprobante-archivo";
 import { sincronizarMovimientos, verificarSolicitud } from "@/lib/verificar-pago";
 
-// Compra de un plan por transferencia (SPEC 11): el usuario genera una
+// Compra de un plan por transferencia (SPEC 12): el usuario genera una
 // solicitud con un monto único y sube el comprobante; la verificación contra
 // la cuenta de Mercado Pago es automática (ver src/lib/verificar-pago.ts).
 

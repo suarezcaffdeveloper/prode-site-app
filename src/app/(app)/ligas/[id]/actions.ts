@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { generarCodigoInvitacion } from "@/lib/codigo-invitacion";
 // La compra de un plan (solicitud de pago + comprobante) vive en
-// ./pago-actions.ts (SPEC 11).
+// ./pago-actions.ts (SPEC 12).
 
 type State = { error?: string };
 

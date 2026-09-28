@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ExtraccionComprobante } from "@/lib/conciliacion";
 import type { MediaTypeImagen } from "@/lib/comprobante-archivo";
 
-// Lectura de comprobantes de transferencia con visión (SPEC 11). La IA SOLO
+// Lectura de comprobantes de transferencia con visión (SPEC 12). La IA SOLO
 // extrae datos de la imagen: nunca decide si el pago se aprueba (eso lo hace
 // conciliar() en src/lib/conciliacion.ts con reglas determinísticas contra la
 // cuenta de Mercado Pago).
