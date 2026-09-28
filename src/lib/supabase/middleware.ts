@@ -38,6 +38,10 @@ export async function updateSession(request: NextRequest) {
     pathname === "/" ||
     pathname === "/offline" ||
     pathname.startsWith("/auth/") ||
+    // Los llama Mercado Pago y el cron, sin sesión de usuario: se autentican
+    // por su propia firma / secreto dentro del route handler.
+    pathname.startsWith("/api/webhooks/") ||
+    pathname.startsWith("/api/cron/") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/manifest") ||
     pathname.startsWith("/icons") ||

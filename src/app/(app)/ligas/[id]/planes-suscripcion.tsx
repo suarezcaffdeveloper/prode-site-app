@@ -8,19 +8,28 @@ import {
   PLANES,
   ahorroVsSuelto,
   formatearPrecio,
+  obtenerPlan,
   precioPorProde,
   type Plan,
 } from "@/lib/planes";
-import { CheckoutPlan } from "./checkout-plan";
+import { formatearPesos } from "@/lib/pozo";
+import { CheckoutPlan, type CuentaCobro } from "./checkout-plan";
+import type { SolicitudVista } from "./pago-actions";
 
 export function PlanesSuscripcion({
   ligaId,
   recompra = false,
+  cuenta,
+  solicitudAbierta,
 }: {
   ligaId: string;
   recompra?: boolean;
+  cuenta: CuentaCobro | null;
+  // Pago iniciado (monto reservado) que todavía no recibió comprobante.
+  solicitudAbierta: SolicitudVista | null;
 }) {
   const [planSeleccionado, setPlanSeleccionado] = useState<Plan | null>(null);
+  const planPendiente = solicitudAbierta ? obtenerPlan(solicitudAbierta.planSlug) : undefined;
   const [indiceVisible, setIndiceVisible] = useState(() => {
     const indiceRecomendado = PLANES.findIndex((plan) => plan.recomendado);
     return indiceRecomendado >= 0 ? indiceRecomendado : 0;
@@ -74,6 +83,21 @@ export function PlanesSuscripcion({
             : "Cada plan te da prodes para jugar en las próximas fechas."}
         </p>
       </div>
+
+      {solicitudAbierta && planPendiente && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-pitch-500/40 bg-lime-400/15 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink-900">Tenés un pago iniciado</p>
+            <p className="text-sm text-ink-600">
+              {planPendiente.nombre} · transferí {formatearPesos(solicitudAbierta.montoATransferir)} y
+              subí el comprobante.
+            </p>
+          </div>
+          <Button type="button" onClick={() => setPlanSeleccionado(planPendiente)}>
+            Continuar mi pago
+          </Button>
+        </div>
+      )}
 
       <div className="flex items-center justify-between font-mono text-[11px] font-semibold tracking-widest lg:hidden">
         <span className="flex items-center gap-1.5 text-pitch-600">
@@ -235,6 +259,12 @@ export function PlanesSuscripcion({
           key={planSeleccionado.slug}
           ligaId={ligaId}
           plan={planSeleccionado}
+          cuenta={cuenta}
+          solicitudInicial={
+            solicitudAbierta && solicitudAbierta.planSlug === planSeleccionado.slug
+              ? solicitudAbierta
+              : null
+          }
           onClose={cerrarCheckout}
         />
       )}

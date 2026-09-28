@@ -33,6 +33,8 @@ const ICONOS: Record<TipoNotificacion, { icono: LucideIcon; tono: string }> = {
   cierra_pronto: { icono: Clock, tono: "bg-amber-500/15 text-amber-700" },
   creditos_por_vencer: { icono: CalendarClock, tono: "bg-amber-500/15 text-amber-700" },
   suscripcion_vencida: { icono: CalendarX, tono: "bg-coral-500/15 text-coral-700" },
+  pago_en_revision: { icono: Clock, tono: "bg-amber-500/15 text-amber-700" },
+  pago_rechazado: { icono: CalendarX, tono: "bg-coral-500/15 text-coral-700" },
 };
 
 function tiempoRelativo(iso: string): string {

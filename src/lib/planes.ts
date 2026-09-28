@@ -13,12 +13,8 @@ export interface Plan {
 // Valores de ejemplo (placeholder): el usuario los va a ajustar más adelante.
 // Los slugs anticipan los nombres que va a tener la tabla `planes` real de
 // SPEC 04, para no tener que reconciliar nomenclatura cuando se implemente.
-// Datos de ejemplo (placeholder): reemplazar por los reales de la cuenta que cobra.
-export const DATOS_TRANSFERENCIA = {
-  alias: "prode.pagos",
-  cbu: "0000003100012345678901",
-  titular: "Prode App S.R.L.",
-} as const;
+// Los datos de la cuenta que cobra (alias, CBU, titular) ya no viven acá: salen
+// de variables de entorno (ver src/lib/pago-config.ts, SPEC 11).
 
 export const PLANES: Plan[] = [
   {
