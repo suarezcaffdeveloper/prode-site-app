@@ -118,6 +118,8 @@ html {
   --animate-globito: globito 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-toast: toast 3.6s ease-in-out both;
   --animate-bounce-soft: bounce-soft 2s ease-in-out infinite;
+  --animate-spin-slow: spin-forward 60s linear infinite;
+  --animate-spin-slow-reverse: spin-reverse 90s linear infinite;
 }
 
 @keyframes marquee {
@@ -174,6 +176,14 @@ html {
   0%, 100% { transform: translateY(0); opacity: 0.6; }
   50% { transform: translateY(8px); opacity: 1; }
 }
+@keyframes spin-forward {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
 @keyframes barra-progreso {
   from { width: 0%; }
   to { width: 100%; }
@@ -195,6 +205,33 @@ html {
 .reveal[data-visible="true"] { opacity: 1; transform: none; }
 @media (scripting: none) {
   .reveal { opacity: 1; transform: none; }
+}
+
+/* En escritorio la navegación de la liga vive en el header: la barra inferior
+   de mobile se oculta siempre, sin depender del orden de las utilidades. */
+@media (min-width: 1024px) {
+  .liga-bottom-nav { display: none !important; }
+}
+
+/* Igual que .reveal pero solo desde escritorio: en mobile el contenido
+   aparece de una, como siempre. */
+@media (min-width: 1024px) {
+  .reveal-lg {
+    opacity: 0;
+    transition:
+      opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+  .reveal-lg[data-variant="up"] { transform: translateY(32px); }
+  .reveal-lg[data-variant="left"] { transform: translateX(-36px); }
+  .reveal-lg[data-variant="right"] { transform: translateX(36px); }
+  .reveal-lg[data-variant="scale"] { transform: scale(0.94); }
+  .reveal-lg[data-visible="true"] { opacity: 1; transform: none; }
+}
+@media (scripting: none) {
+  .reveal-lg { opacity: 1 !important; transform: none !important; }
 }
 
 /* Slider del simulador de pozo */

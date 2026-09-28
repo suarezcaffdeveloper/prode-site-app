@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
+import { HeaderNavLiga } from "@/components/header-nav-liga";
 import { CampanaNotificaciones } from "@/components/campana-notificaciones";
 import { cerrarSesion } from "@/lib/auth-actions";
 import type { Notificacion } from "@/lib/notificaciones";
@@ -23,8 +24,8 @@ export function AppHeader({
   notificaciones: Notificacion[];
 }) {
   return (
-    <header className="relative border-b border-line bg-chalk-0">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+    <header className="relative border-b border-line bg-chalk-0 lg:sticky lg:top-0 lg:z-30 lg:bg-chalk-0/90 lg:backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:grid lg:h-[72px] lg:grid-cols-[1fr_auto_1fr]">
         <div className="flex items-center gap-3">
           <Link href="/ligas">
             <Logo />
@@ -38,7 +39,9 @@ export function AppHeader({
           </Link>
         </div>
 
-        <div className="flex items-center gap-3">
+        <HeaderNavLiga />
+
+        <div className="flex items-center gap-3 lg:col-start-3 lg:justify-self-end">
           <CampanaNotificaciones usuarioId={usuario.id} iniciales={notificaciones} />
 
           <span

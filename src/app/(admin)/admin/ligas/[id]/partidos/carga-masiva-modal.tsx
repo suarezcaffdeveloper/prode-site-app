@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { FileSpreadsheet } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { parsearFixtureExcel } from "@/lib/parsear-fixture-excel";
@@ -102,17 +103,27 @@ export function CargaMasivaModal({
 
       {paso.tipo === "seleccion" && (
         <div className="flex flex-col gap-2">
-          <input
-            type="file"
-            accept=".xlsx,.csv"
-            aria-label="Archivo de fixture"
-            onChange={(e) => {
-              const archivo = e.target.files?.[0];
-              if (archivo) void onArchivoSeleccionado(archivo);
-              e.target.value = "";
-            }}
-            className="rounded-lg border border-line-strong bg-chalk-0 px-3.5 py-2.5 text-sm text-ink-900"
-          />
+          <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-line-strong bg-chalk-50 px-6 py-10 text-center transition-colors hover:border-pitch-500 hover:bg-chalk-0 has-[:focus-visible]:border-pitch-500 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-pitch-500/30">
+            <span
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-line-strong bg-chalk-0 text-pitch-700"
+              aria-hidden="true"
+            >
+              <FileSpreadsheet className="h-6 w-6" />
+            </span>
+            <span className="text-sm font-semibold text-pitch-700">Elegir archivo</span>
+            <span className="text-xs text-ink-600">.xlsx o .csv</span>
+            <input
+              type="file"
+              accept=".xlsx,.csv"
+              aria-label="Archivo de fixture"
+              onChange={(e) => {
+                const archivo = e.target.files?.[0];
+                if (archivo) void onArchivoSeleccionado(archivo);
+                e.target.value = "";
+              }}
+              className="sr-only"
+            />
+          </label>
           {paso.error && (
             <p role="alert" className="text-sm font-medium text-coral-700">
               {paso.error}

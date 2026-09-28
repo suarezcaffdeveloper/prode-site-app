@@ -9,6 +9,9 @@ type State = { error?: string; exito?: string };
 
 type Equipo = { id: string; nombre: string };
 
+const SELECT =
+  "rounded-lg border border-line-strong bg-chalk-0 px-3.5 py-2.5 text-sm text-ink-900 transition-colors focus-visible:border-pitch-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pitch-500/30";
+
 export function PartidoForm({
   action,
   submitLabel,
@@ -17,6 +20,7 @@ export function PartidoForm({
   ocupacionPorJornada,
   defaultValues,
   mostrarResultado,
+  compacto = false,
   onExito,
 }: {
   action: (prevState: State, formData: FormData) => Promise<State>;
@@ -33,6 +37,8 @@ export function PartidoForm({
     golesVisitante?: number | null;
   };
   mostrarResultado?: boolean;
+  // Versión angosta para el panel lateral: campos apilados y botón a todo el ancho.
+  compacto?: boolean;
   // Se llama cuando la acción devuelve `exito` (alta sin redirect): el padre
   // muestra el aviso y este form queda listo para cargar el siguiente partido.
   onExito?: (mensaje: string) => void;
@@ -97,7 +103,7 @@ export function PartidoForm({
   const opcionesVisitante = equiposDisponibles.filter((equipo) => equipo.id !== equipoLocalId);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4" noValidate>
+    <form action={formAction} className="flex flex-col gap-5" noValidate>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="jornada" className="text-sm font-medium text-ink-900">
           Jornada
@@ -108,7 +114,7 @@ export function PartidoForm({
           required
           value={jornada ?? ""}
           onChange={(e) => setJornada(Number(e.target.value))}
-          className="rounded-lg border border-line-strong bg-chalk-0 px-3.5 py-2.5 text-sm text-ink-900"
+          className={SELECT}
         >
           {jornadasDisponibles.length === 0 ? (
             <option value="" disabled>
@@ -124,7 +130,7 @@ export function PartidoForm({
         </select>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={`grid gap-5 ${compacto ? "" : "sm:grid-cols-2"}`}>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="equipo_local_id" className="text-sm font-medium text-ink-900">
             Equipo local
@@ -136,7 +142,7 @@ export function PartidoForm({
             required
             value={equipoLocalId}
             onChange={(e) => setEquipoLocalId(e.target.value)}
-            className="rounded-lg border border-line-strong bg-chalk-0 px-3.5 py-2.5 text-sm text-ink-900"
+            className={SELECT}
           >
             <option value="" disabled>
               Elegir equipo
@@ -163,7 +169,7 @@ export function PartidoForm({
             required
             value={equipoVisitanteId}
             onChange={(e) => setEquipoVisitanteId(e.target.value)}
-            className="rounded-lg border border-line-strong bg-chalk-0 px-3.5 py-2.5 text-sm text-ink-900"
+            className={SELECT}
           >
             <option value="" disabled>
               Elegir equipo
@@ -221,7 +227,7 @@ export function PartidoForm({
         type="submit"
         loading={pending}
         disabled={jornadasDisponibles.length === 0}
-        className="mt-1 self-start"
+        className={compacto ? "w-full" : "self-start"}
       >
         {submitLabel}
       </Button>

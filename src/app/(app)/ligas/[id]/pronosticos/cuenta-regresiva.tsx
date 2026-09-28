@@ -47,7 +47,7 @@ export function CuentaRegresivaCierre({
 
   if (variante === "hero") {
     return (
-      <span className="font-display text-xl font-bold leading-tight tabular-nums text-chalk-0">
+      <span className="font-display text-xl font-bold leading-tight tabular-nums text-chalk-0 lg:text-3xl">
         {texto}
       </span>
     );

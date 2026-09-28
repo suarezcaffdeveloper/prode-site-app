@@ -1,8 +1,16 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "danger-soft";
+type Size = "md" | "sm";
+
+const sizeClasses: Record<Size, string> = {
+  md: "px-5 py-2.5",
+  sm: "px-3.5 py-2",
+};
 
 const variantClasses: Record<Variant, string> = {
+  "danger-soft":
+    "bg-chalk-0 text-coral-700 border border-line-strong hover:border-coral-500 hover:bg-coral-500/5 disabled:text-ink-400 disabled:border-line",
   primary:
     "bg-pitch-700 text-chalk-0 hover:bg-pitch-600 disabled:bg-ink-400",
   secondary:
@@ -15,17 +23,18 @@ const variantClasses: Record<Variant, string> = {
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
+  size?: Size;
   loading?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = "primary", loading, disabled, className = "", children, ...props }, ref) => {
+  ({ variant = "primary", size = "md", loading, disabled, className = "", children, ...props }, ref) => {
     return (
       <button
         ref={ref}
         disabled={disabled || loading}
         aria-busy={loading || undefined}
-        className={`inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold tracking-tight transition-colors disabled:cursor-not-allowed ${variantClasses[variant]} ${className}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-lg text-sm font-semibold tracking-tight transition-colors disabled:cursor-not-allowed ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
         {...props}
       >
         {loading && (

@@ -2,51 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart2, Calendar, ClipboardList, Home, Ticket } from "lucide-react";
+import { itemActivo, itemsNavLiga } from "./liga-nav-items";
 
+// Navegación inferior de mobile. En escritorio la reemplaza HeaderNavLiga.
 export function LigaBottomNav({ ligaId }: { ligaId: string }) {
   const pathname = usePathname();
-
-  const items = [
-    {
-      label: "Pronósticos",
-      href: `/ligas/${ligaId}/pronosticos`,
-      icon: ClipboardList,
-    },
-    {
-      label: "Fixture",
-      href: `/ligas/${ligaId}/partidos`,
-      icon: Calendar,
-    },
-    {
-      label: "Inicio",
-      href: `/ligas/${ligaId}`,
-      icon: Home,
-      central: true,
-    },
-    {
-      label: "Planes",
-      href: `/ligas/${ligaId}/planes`,
-      icon: Ticket,
-    },
-    {
-      label: "Estadísticas",
-      href: `/ligas/${ligaId}/estadisticas`,
-      icon: BarChart2,
-    },
-  ];
+  const items = itemsNavLiga(ligaId);
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-chalk-0"
+      className="liga-bottom-nav fixed inset-x-0 bottom-0 z-20 border-t border-line bg-chalk-0 lg:hidden"
       aria-label="Navegación de la liga"
     >
       <div className="mx-auto flex max-w-5xl items-stretch justify-between px-2">
         {items.map((item) => {
-          const activo =
-            item.href === `/ligas/${ligaId}`
-              ? pathname === item.href
-              : pathname.startsWith(item.href);
+          const activo = itemActivo(item, ligaId, pathname);
           const Icon = item.icon;
 
           return (

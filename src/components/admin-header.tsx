@@ -6,7 +6,7 @@ import { cerrarSesion } from "@/lib/auth-actions";
 export function AdminHeader() {
   return (
     <header className="border-b border-line bg-chalk-0">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <Link href="/admin/ligas">
             <Logo />

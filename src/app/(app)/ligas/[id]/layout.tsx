@@ -10,7 +10,7 @@ export default async function LigaLayout({
   const { id } = await params;
 
   return (
-    <div className="pb-24">
+    <div className="pb-24 lg:pb-0">
       {children}
       <LigaBottomNav ligaId={id} />
     </div>

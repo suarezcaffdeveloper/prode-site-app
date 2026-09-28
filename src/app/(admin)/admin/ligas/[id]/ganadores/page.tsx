@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft, ArrowRight, Check, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { formatearPesos, obtenerPozoJornada, repartirPozo } from "@/lib/pozo";
@@ -27,19 +28,11 @@ type FilaGanador = {
   avisoError: string | null;
 };
 
-function Dato({ etiqueta, valor, destacado = false }: { etiqueta: string; valor: string; destacado?: boolean }) {
+function FilaDato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] font-semibold tracking-widest text-ink-400">
-        {etiqueta}
-      </span>
-      <span
-        className={`font-display font-bold tabular-nums ${
-          destacado ? "text-2xl text-pitch-700" : "text-lg text-ink-900"
-        }`}
-      >
-        {valor}
-      </span>
+    <div className="flex items-center justify-between gap-4 border-t border-line py-2.5 text-sm">
+      <dt className="text-ink-600">{etiqueta}</dt>
+      <dd className="font-semibold tabular-nums text-ink-900">{valor}</dd>
     </div>
   );
 }
@@ -87,9 +80,12 @@ export default async function GanadoresLigaPage({
   if (jornadas.length === 0) {
     return (
       <div className="flex flex-col gap-8">
-        <Encabezado ligaNombre={liga.nombre} ligaId={id} />
-        <Card className="p-8 text-center text-sm text-ink-600">
-          Esta liga todavía no tiene partidos cargados.
+        <Encabezado ligaNombre={liga.nombre} ligaId={id} subtitulo="Todavía no hay jornadas para liquidar." />
+        <Card className="flex flex-col items-center gap-1 border-dashed p-16 text-center">
+          <p className="font-display text-lg font-semibold text-ink-900">Sin partidos cargados</p>
+          <p className="text-sm text-ink-600">
+            Cargá el fixture de la liga para poder liquidar jornadas y ver ganadores.
+          </p>
         </Card>
       </div>
     );
@@ -192,175 +188,257 @@ export default async function GanadoresLigaPage({
   const hayAvisados = ganadores.some((g) => g.avisadoEn);
   const hayPendientesDeAviso = ganadores.some((g) => !g.avisadoEn);
   const comision = pozo ? Math.round((pozo.recaudado - pozo.pozo_jornada) * 100) / 100 : 0;
+  const totalCartonesGanadores = ganadores.reduce((acc, g) => acc + g.cartones, 0);
 
   return (
     <div className="flex flex-col gap-8">
-      <Encabezado ligaNombre={liga.nombre} ligaId={id} />
+      <Encabezado
+        ligaNombre={liga.nombre}
+        ligaId={id}
+        subtitulo={`${liquidadas.size} de ${jornadas.length} ${
+          jornadas.length === 1 ? "jornada liquidada" : "jornadas liquidadas"
+        }`}
+      />
 
-      <div className="flex flex-wrap gap-2">
-        {jornadas.map((j) => (
-          <Link
-            key={j}
-            href={`/admin/ligas/${id}/ganadores?jornada=${j}`}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
-              j === jornada
-                ? "border-pitch-700 bg-pitch-700 text-chalk-0"
-                : "border-line-strong bg-chalk-0 text-ink-900 hover:border-pitch-700 hover:text-pitch-700"
-            }`}
-          >
-            J{j}
-            {liquidadas.has(j) && (
-              <span aria-label="liquidada" title="Liquidada">
-                ✓
+      <nav
+        aria-label="Elegir jornada"
+        className="flex flex-wrap items-center gap-1 rounded-xl border border-line bg-chalk-0 p-1"
+      >
+        {jornadas.map((j) => {
+          const activa = j === jornada;
+          return (
+            <Link
+              key={j}
+              href={`/admin/ligas/${id}/ganadores?jornada=${j}`}
+              aria-current={activa ? "page" : undefined}
+              title={liquidadas.has(j) ? `Jornada ${j} · liquidada` : `Jornada ${j}`}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                activa
+                  ? "bg-pitch-700 text-chalk-0"
+                  : "text-ink-600 hover:bg-chalk-100 hover:text-pitch-700"
+              }`}
+            >
+              J{j}
+              {liquidadas.has(j) && (
+                <Check
+                  className={`h-3.5 w-3.5 ${activa ? "text-lime-300" : "text-pitch-600"}`}
+                  strokeWidth={3}
+                  aria-label="liquidada"
+                />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+        {/* Panel de liquidación: pozo y acciones de la jornada, siempre visible. */}
+        <Card className="p-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pitch-700 text-chalk-0"
+                aria-hidden="true"
+              >
+                <Trophy className="h-5 w-5" />
               </span>
-            )}
-          </Link>
-        ))}
-      </div>
-
-      <Card className="flex flex-col gap-5 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-display text-lg font-bold text-ink-900">Jornada {jornada}</p>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-mono text-[11px] font-semibold tracking-widest ${
-              liquidada ? "bg-lime-400/25 text-pitch-700" : "bg-chalk-100 text-ink-600"
-            }`}
-          >
-            {liquidada ? "LIQUIDADA" : "SIN LIQUIDAR"}
-          </span>
-        </div>
-
-        {pozo && (
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
-            <Dato etiqueta={`PRODES (${pozo.cantidad_cartones})`} valor={formatearPesos(pozo.recaudado)} />
-            <Dato
-              etiqueta={`POZO (${liga.porcentaje_pozo}%)`}
-              valor={formatearPesos(pozo.pozo_jornada)}
-            />
-            <Dato
-              etiqueta="ACUMULADO"
-              valor={formatearPesos(pozo.pozo_acumulado_entrante)}
-            />
-            <Dato etiqueta="POZO TOTAL" valor={formatearPesos(pozo.pozo_total)} destacado />
-            <Dato
-              etiqueta={`PLATAFORMA (${100 - Number(liga.porcentaje_pozo)}%)`}
-              valor={formatearPesos(comision)}
-            />
-            <Dato
-              etiqueta="POR GANADOR"
-              valor={
-                ganadores.length === 0
-                  ? "—"
-                  : formatearPesos(
-                      liquidada
-                        ? ganadores.reduce((acc, g) => acc + g.monto, 0) /
-                            Math.max(1, ganadores.reduce((acc, g) => acc + g.cartones, 0))
-                        : repartirPozo(
-                            pozo.pozo_total,
-                            ganadores.reduce((acc, g) => acc + g.cartones, 0),
-                          ).montoPorGanador,
-                    )
-              }
-            />
+              <div>
+                <h2 className="font-display text-lg font-bold leading-tight text-ink-900">
+                  Jornada {jornada}
+                </h2>
+                <p className="text-xs text-ink-600">Pozo y liquidación</p>
+              </div>
+            </div>
+            <span
+              className={`inline-flex shrink-0 items-center rounded-md px-2.5 py-1 font-mono text-[11px] font-semibold tracking-widest ${
+                liquidada ? "bg-lime-400/25 text-pitch-700" : "bg-chalk-100 text-ink-600"
+              }`}
+            >
+              {liquidada ? "LIQUIDADA" : "SIN LIQUIDAR"}
+            </span>
           </div>
-        )}
 
-        {!liquidada && previasSinLiquidar.length > 0 && (
-          <p className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
-            Hay jornadas anteriores sin liquidar: el pozo acumulado puede estar incompleto hasta
-            que las liquides.
-          </p>
-        )}
+          {pozo && (
+            <div className="mb-5 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="font-mono text-[10px] font-semibold tracking-widest text-ink-400">
+                  POZO TOTAL
+                </span>
+                <span className="font-display text-3xl font-bold leading-tight tabular-nums text-pitch-700">
+                  {formatearPesos(pozo.pozo_total)}
+                </span>
+              </div>
+              <dl className="flex flex-col">
+                <FilaDato
+                  etiqueta={`Prodes recaudados (${pozo.cantidad_cartones})`}
+                  valor={formatearPesos(pozo.recaudado)}
+                />
+                <FilaDato
+                  etiqueta={`Pozo de la jornada (${liga.porcentaje_pozo}%)`}
+                  valor={formatearPesos(pozo.pozo_jornada)}
+                />
+                <FilaDato
+                  etiqueta="Acumulado anterior"
+                  valor={formatearPesos(pozo.pozo_acumulado_entrante)}
+                />
+                <FilaDato
+                  etiqueta={`Plataforma (${100 - Number(liga.porcentaje_pozo)}%)`}
+                  valor={formatearPesos(comision)}
+                />
+                <FilaDato
+                  etiqueta="Por ganador"
+                  valor={
+                    ganadores.length === 0
+                      ? "—"
+                      : formatearPesos(
+                          liquidada
+                            ? ganadores.reduce((acc, g) => acc + g.monto, 0) /
+                                Math.max(1, totalCartonesGanadores)
+                            : repartirPozo(pozo.pozo_total, totalCartonesGanadores).montoPorGanador,
+                        )
+                  }
+                />
+              </dl>
+            </div>
+          )}
 
-        <AccionesGanadores
-          liquidada={liquidada}
-          puedeLiquidar={puedeLiquidar}
-          motivoNoLiquidar={motivoNoLiquidar}
-          hayPendientesDeAviso={hayPendientesDeAviso && ganadores.length > 0}
-          hayAvisados={hayAvisados}
-          liquidarAction={liquidarJornada.bind(null, id, jornada)}
-          deshacerAction={deshacerLiquidacion.bind(null, id, jornada)}
-          avisarAction={enviarAvisoGanadores.bind(null, id, jornada)}
-        />
-      </Card>
+          {!liquidada && previasSinLiquidar.length > 0 && (
+            <p className="mb-5 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
+              Hay jornadas anteriores sin liquidar: el pozo acumulado puede estar incompleto hasta
+              que las liquides.
+            </p>
+          )}
 
-      <div className="flex flex-col gap-3">
-        <p className="text-sm font-semibold text-ink-900">
-          {liquidada ? "Ganadores" : "Ganadores provisorios"}
-        </p>
-        {ganadores.length === 0 ? (
-          <Card className="p-6 text-center text-sm text-ink-600">
-            {resumen.pendientes > 0
-              ? "Todavía no hay ganadores: faltan resultados en esta jornada."
-              : liquidada
-                ? "Nadie acertó todos los resultados: el pozo pasa a la próxima jornada."
-                : "Nadie acertó todos los resultados de esta jornada."}
-          </Card>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {ganadores.map((ganador) => (
-              <li key={ganador.usuarioId}>
-                <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-ink-900">
-                      {ganador.nombre || ganador.email}
-                    </p>
-                    {ganador.nombre && (
-                      <p className="truncate text-xs text-ink-400">{ganador.email}</p>
-                    )}
-                    <p className="mt-1 text-xs text-ink-600">
-                      {ganador.cartones} {ganador.cartones === 1 ? "prode ganador" : "prodes ganadores"}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-5">
-                    <span className="font-display text-lg font-bold tabular-nums text-pitch-700">
-                      {formatearPesos(ganador.monto)}
-                    </span>
-                    {liquidada && (
+          <AccionesGanadores
+            liquidada={liquidada}
+            puedeLiquidar={puedeLiquidar}
+            motivoNoLiquidar={motivoNoLiquidar}
+            hayPendientesDeAviso={hayPendientesDeAviso && ganadores.length > 0}
+            hayAvisados={hayAvisados}
+            liquidarAction={liquidarJornada.bind(null, id, jornada)}
+            deshacerAction={deshacerLiquidacion.bind(null, id, jornada)}
+            avisarAction={enviarAvisoGanadores.bind(null, id, jornada)}
+          />
+        </Card>
+
+        <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-1">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="font-display text-xl font-bold tracking-tight text-ink-900">
+              {liquidada ? "Ganadores" : "Ganadores provisorios"}
+            </h2>
+            <span className="text-sm text-ink-600">
+              {ganadores.length} {ganadores.length === 1 ? "ganador" : "ganadores"}
+            </span>
+          </div>
+
+          {ganadores.length === 0 ? (
+            <Card className="flex flex-col items-center gap-1 border-dashed p-16 text-center">
+              <p className="font-display text-lg font-semibold text-ink-900">Sin ganadores</p>
+              <p className="text-sm text-ink-600">
+                {resumen.pendientes > 0
+                  ? "Todavía no hay ganadores: faltan resultados en esta jornada."
+                  : liquidada
+                    ? "Nadie acertó todos los resultados: el pozo pasa a la próxima jornada."
+                    : "Nadie acertó todos los resultados de esta jornada."}
+              </p>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden">
+              <ul className="divide-y divide-line">
+                {ganadores.map((ganador) => (
+                  <li
+                    key={ganador.usuarioId}
+                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-4 transition-colors hover:bg-chalk-50"
+                  >
+                    <div className="flex min-w-0 items-center gap-4">
                       <span
-                        title={ganador.avisoError ?? undefined}
-                        className={`rounded-md px-2.5 py-1 font-mono text-[11px] font-semibold tracking-widest ${
-                          ganador.avisadoEn
-                            ? "bg-lime-400/25 text-pitch-700"
-                            : ganador.avisoError
-                              ? "bg-coral-500/10 text-coral-700"
-                              : "bg-chalk-100 text-ink-600"
-                        }`}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pitch-900 font-display text-lg font-bold text-lime-300"
+                        aria-hidden="true"
                       >
-                        {ganador.avisadoEn
-                          ? `AVISADO ${new Date(ganador.avisadoEn).toLocaleDateString("es-AR")}`
-                          : ganador.avisoError
-                            ? "ERROR AL AVISAR"
-                            : "SIN AVISAR"}
+                        {(ganador.nombre || ganador.email).charAt(0).toUpperCase()}
                       </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-display text-base font-semibold text-ink-900">
+                          {ganador.nombre || ganador.email}
+                        </p>
+                        <p className="truncate text-sm text-ink-600">
+                          {ganador.nombre ? `${ganador.email} · ` : ""}
+                          {ganador.cartones}{" "}
+                          {ganador.cartones === 1 ? "prode ganador" : "prodes ganadores"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-5">
+                      <span className="font-display text-xl font-bold tabular-nums text-pitch-700">
+                        {formatearPesos(ganador.monto)}
+                      </span>
+                      {liquidada && (
+                        <span
+                          title={ganador.avisoError ?? undefined}
+                          className={`rounded-md px-2.5 py-1 font-mono text-[11px] font-semibold tracking-widest ${
+                            ganador.avisadoEn
+                              ? "bg-lime-400/25 text-pitch-700"
+                              : ganador.avisoError
+                                ? "bg-coral-500/10 text-coral-700"
+                                : "bg-chalk-100 text-ink-600"
+                          }`}
+                        >
+                          {ganador.avisadoEn
+                            ? `AVISADO ${new Date(ganador.avisadoEn).toLocaleDateString("es-AR")}`
+                            : ganador.avisoError
+                              ? "ERROR AL AVISAR"
+                              : "SIN AVISAR"}
+                        </span>
+                      )}
+                    </div>
+                    {ganador.avisoError && !ganador.avisadoEn && (
+                      <p className="w-full text-xs text-coral-700">{ganador.avisoError}</p>
                     )}
-                  </div>
-                  {ganador.avisoError && !ganador.avisadoEn && (
-                    <p className="w-full text-xs text-coral-700">{ganador.avisoError}</p>
-                  )}
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function Encabezado({ ligaNombre, ligaId }: { ligaNombre: string; ligaId: string }) {
+function Encabezado({
+  ligaNombre,
+  ligaId,
+  subtitulo,
+}: {
+  ligaNombre: string;
+  ligaId: string;
+  subtitulo: string;
+}) {
   return (
-    <div>
-      <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
-        {ligaNombre.toUpperCase()}
-      </p>
-      <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Ganadores</h1>
+    <div className="flex flex-col gap-4">
       <Link
-        href={`/admin/ligas/${ligaId}/partidos`}
-        className="mt-1 inline-block text-sm font-medium text-pitch-700 hover:underline"
+        href="/admin/ligas"
+        className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-ink-600 transition-colors hover:text-pitch-700"
       >
-        Ir a partidos →
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+        Todas las ligas
       </Link>
+      <div className="flex items-end justify-between gap-6">
+        <div>
+          <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
+            {ligaNombre.toUpperCase()}
+          </p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-ink-900">Ganadores</h1>
+          <p className="mt-1 text-sm text-ink-600">{subtitulo}</p>
+        </div>
+        <Link
+          href={`/admin/ligas/${ligaId}/partidos`}
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-line-strong bg-chalk-0 px-4 py-2 text-sm font-semibold tracking-tight text-ink-900 transition-colors hover:border-pitch-700 hover:text-pitch-700"
+        >
+          Ir a partidos
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </div>
     </div>
   );
 }

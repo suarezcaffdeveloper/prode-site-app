@@ -85,6 +85,22 @@ export async function crearCarton(
   return {};
 }
 
+// Elige cuál de los cartones del usuario compite en sus subgrupos (SPEC 10).
+export async function elegirCartonPrincipal(
+  ligaId: string,
+  cartonId: string,
+): Promise<State> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("elegir_carton_principal", {
+    p_carton_id: cartonId,
+  });
+
+  if (error) return { error: mensajeErrorRpc(error) };
+
+  revalidatePath(`/ligas/${ligaId}/pronosticos`);
+  return {};
+}
+
 export async function actualizarCarton(
   ligaId: string,
   cartonId: string,

@@ -109,6 +109,8 @@ Conventions:
 ## Acceptance criteria
 
 > **Nota (2026-09-26):** el criterio de "pedir suscribirse" de abajo quedó **superseded por SPEC 06**, que reemplaza el botón simple "Quiero suscribirme" por la elección de un plan + carga de comprobante. El resto de esta spec (registro, catálogo de ligas, subgrupos) sigue vigente sin cambios.
+>
+> **Nota (2026-09-28):** la visual de `/grupos/[id]` y el ranking por puntos de los subgrupos (cartón que compite, tabla de posiciones, cartones visibles desde el cierre) se definen en **SPEC 10**. Las reglas de creación, unión por código, gestión del creador y miembros inactivos de esta spec no cambian.
 
 - [ ] Un usuario puede registrarse con email/password y queda logueado.
 - [ ] Un usuario puede iniciar sesión con Google OAuth.

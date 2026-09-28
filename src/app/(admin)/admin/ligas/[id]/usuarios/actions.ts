@@ -11,16 +11,18 @@ export async function cambiarEstadoSuscripcion(
   ligaId: string,
   membresiaId: string,
   formData: FormData,
-) {
+): Promise<{ error?: string } | void> {
   const nuevoEstado = String(formData.get("estado_suscripcion"));
   if (!ESTADOS_ASIGNABLES.includes(nuevoEstado)) return;
 
   const supabase = await createClient();
 
-  await supabase
+  const { error } = await supabase
     .from("membresias_liga")
     .update({ estado_suscripcion: nuevoEstado })
     .eq("id", membresiaId);
+
+  if (error) return { error: "No pudimos actualizar el estado. Intentá de nuevo." };
 
   revalidatePath(`/admin/ligas/${ligaId}/usuarios`);
 }

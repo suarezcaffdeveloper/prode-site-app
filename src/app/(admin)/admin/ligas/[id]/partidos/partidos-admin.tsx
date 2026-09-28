@@ -2,9 +2,21 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  ClipboardCheck,
+  Clock,
+  Pencil,
+  Play,
+  Plus,
+  Upload,
+  X,
+} from "lucide-react";
 import { Escudo } from "@/components/ui/escudo";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { MarcadorActiva, MarcadorResultado } from "@/components/ui/marcador";
 import { aInputDatetimeLocal, deInputDatetimeLocal } from "@/lib/fecha-hora-input";
 import type { FilaFixtureCruda, PartidoExistenteBatch } from "@/lib/fixture-batch";
@@ -67,6 +79,8 @@ function formatearFechaHora(iso: string | null) {
   });
 }
 
+// Botón de acción de cada jornada. Mismo lenguaje que el resto del admin:
+// primario en verde sólido, secundario con borde, ambos con ícono + texto.
 function BotonAccion({
   variante = "secundario",
   className = "",
@@ -79,7 +93,7 @@ function BotonAccion({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${estilos} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-semibold tracking-tight transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${estilos} ${className}`}
       {...props}
     />
   );
@@ -109,8 +123,8 @@ function FilaCruce({
   const finalizado = partido.estado === "finalizado";
   const nombrePartido = `${partido.local.nombre} vs ${partido.visitante.nombre}`;
   const columnas = horario
-    ? "grid-cols-[1fr_auto_1fr_2rem] sm:grid-cols-[11rem_1fr_auto_1fr_2rem]"
-    : "grid-cols-[1fr_auto_1fr_2rem] sm:grid-cols-[7.5rem_1fr_auto_1fr_2rem]";
+    ? "grid-cols-[1fr_auto_1fr_2.25rem] sm:grid-cols-[11rem_1fr_auto_1fr_2.25rem]"
+    : "grid-cols-[1fr_auto_1fr_2.25rem] sm:grid-cols-[7.5rem_1fr_auto_1fr_2.25rem]";
 
   return (
     <div
@@ -182,9 +196,9 @@ function FilaCruce({
         href={`/admin/ligas/${ligaId}/partidos/${partido.id}/editar`}
         aria-label={`Editar equipos, jornada o borrar ${nombrePartido}`}
         title="Editar equipos o jornada, o borrar el partido"
-        className="flex h-8 w-8 items-center justify-center rounded-md text-ink-400 transition-colors hover:bg-chalk-100 hover:text-pitch-700"
+        className="flex h-9 w-9 items-center justify-center rounded-lg border border-line-strong bg-chalk-0 text-ink-600 transition-colors hover:border-pitch-700 hover:text-pitch-700"
       >
-        ✎
+        <Pencil className="h-4 w-4" aria-hidden="true" />
       </Link>
 
       {error && (
@@ -242,7 +256,6 @@ export function PartidosAdmin({
   const [abiertas, setAbiertas] = useState<Set<number>>(
     () => new Set(jornadaAbiertaInicial ? [jornadaAbiertaInicial] : []),
   );
-  const [formOpen, setFormOpen] = useState(false);
   const [cargaMasivaAbierta, setCargaMasivaAbierta] = useState(false);
   const [activandoJornada, setActivandoJornada] = useState<number | null>(null);
   const [errorActivacion, setErrorActivacion] = useState<string>();
@@ -413,34 +426,49 @@ export function PartidosAdmin({
     else guardarResultados(jornada);
   }
 
+  const totalPartidos = jornadas.reduce((suma, j) => suma + j.partidos.length, 0);
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
-            {ligaNombre.toUpperCase()}
-          </p>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">Partidos</h1>
-          <Link
-            href={`/admin/ligas/${ligaId}/equipos`}
-            className="mt-1 inline-block text-sm font-medium text-pitch-700 hover:underline"
-          >
-            Ir a equipos →
-          </Link>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <Button variant="secondary" onClick={() => setCargaMasivaAbierta(true)}>
-            Carga masiva
-          </Button>
-          <Button onClick={() => setFormOpen((v) => !v)}>
-            {formOpen ? (
-              "Cerrar panel"
-            ) : (
-              <>
-                <span className="text-base font-bold leading-none">+</span> Cargar partido
-              </>
-            )}
-          </Button>
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
+        <Link
+          href="/admin/ligas"
+          className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-ink-600 transition-colors hover:text-pitch-700"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Todas las ligas
+        </Link>
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+          <div>
+            <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
+              {ligaNombre.toUpperCase()}
+            </p>
+            <h1 className="font-display text-3xl font-bold tracking-tight text-ink-900">Partidos</h1>
+            <p className="mt-1 text-sm text-ink-600">
+              {totalJornadas === 0
+                ? "Cargá al menos dos equipos para armar el fixture."
+                : `${totalJornadas} ${totalJornadas === 1 ? "jornada" : "jornadas"} · ${totalPartidos} ${
+                    totalPartidos === 1 ? "partido cargado" : "partidos cargados"
+                  }`}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCargaMasivaAbierta(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-chalk-0 px-4 py-2 text-sm font-semibold tracking-tight text-ink-900 transition-colors hover:border-pitch-700 hover:text-pitch-700"
+            >
+              <Upload className="h-4 w-4" aria-hidden="true" />
+              Carga masiva
+            </button>
+            <Link
+              href={`/admin/ligas/${ligaId}/equipos`}
+              className="inline-flex items-center gap-2 rounded-lg border border-line-strong bg-chalk-0 px-4 py-2 text-sm font-semibold tracking-tight text-ink-900 transition-colors hover:border-pitch-700 hover:text-pitch-700"
+            >
+              Ir a equipos
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -451,19 +479,19 @@ export function PartidosAdmin({
           className="sticky top-3 z-30 flex items-start gap-3 rounded-xl border border-pitch-500/40 bg-lime-300 px-4 py-3 text-sm font-semibold text-pitch-900 shadow-md"
         >
           <span
-            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pitch-700 text-xs text-chalk-0"
+            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pitch-700 text-chalk-0"
             aria-hidden="true"
           >
-            ✓
+            <Check className="h-3 w-3" strokeWidth={3} />
           </span>
           <p className="min-w-0 flex-1">{aviso.mensaje}</p>
           <button
             type="button"
             onClick={() => setAviso(null)}
             aria-label="Cerrar aviso"
-            className="shrink-0 text-pitch-900/60 hover:text-pitch-900"
+            className="shrink-0 text-pitch-900/60 transition-colors hover:text-pitch-900"
           >
-            ✕
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -483,9 +511,23 @@ export function PartidosAdmin({
         </p>
       )}
 
-      {formOpen && (
-        <Card className="p-6">
-          <p className="mb-3 text-sm font-semibold text-ink-900">Cargar un partido nuevo</p>
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+        {/* Panel de carga: siempre visible a la derecha y fijo al hacer scroll. */}
+        <Card className="p-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
+          <div className="mb-5 flex items-center gap-3">
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pitch-700 text-chalk-0"
+              aria-hidden="true"
+            >
+              <Plus className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="font-display text-lg font-bold leading-tight text-ink-900">
+                Nuevo partido
+              </h2>
+              <p className="text-xs text-ink-600">Se suma a la jornada elegida.</p>
+            </div>
+          </div>
           {equipos.length < 2 ? (
             <p className="text-sm text-ink-600">
               Necesitás al menos dos equipos cargados para armar un partido.{" "}
@@ -500,6 +542,7 @@ export function PartidosAdmin({
             </p>
           ) : (
             <PartidoForm
+              compacto
               action={crearPartidoAction}
               submitLabel="Crear partido"
               equipos={equipos}
@@ -509,185 +552,193 @@ export function PartidosAdmin({
             />
           )}
         </Card>
-      )}
 
-      {totalJornadas === 0 ? (
-        <Card className="p-8 text-center text-sm text-ink-600">
-          Cargá al menos dos equipos para ver el fixture de esta liga.
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {jornadas.map((jornada) => {
-            const abierta = abiertas.has(jornada.numero);
-            const esActiva = jornada.numero === jornadaActiva;
-            const liquidada = jornadasLiquidadas.includes(jornada.numero);
-            const editandoAca = edicion?.jornada === jornada.numero;
-            const editandoHorarios = editandoAca && edicion?.tipo === "horarios";
-            const editandoResultados = editandoAca && edicion?.tipo === "resultados";
-            const cantidad = jornada.partidos.length;
-            const activandoEsta = pendingActivacion && activandoJornada === jornada.numero;
+        <div className="lg:col-start-1 lg:row-start-1">
+          {totalJornadas === 0 ? (
+            <Card className="flex flex-col items-center gap-1 border-dashed p-16 text-center">
+              <p className="font-display text-lg font-semibold text-ink-900">Todavía no hay fixture</p>
+              <p className="text-sm text-ink-600">
+                Cargá al menos dos equipos para ver las jornadas de esta liga.
+              </p>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {jornadas.map((jornada) => {
+                const abierta = abiertas.has(jornada.numero);
+                const esActiva = jornada.numero === jornadaActiva;
+                const liquidada = jornadasLiquidadas.includes(jornada.numero);
+                const editandoAca = edicion?.jornada === jornada.numero;
+                const editandoHorarios = editandoAca && edicion?.tipo === "horarios";
+                const editandoResultados = editandoAca && edicion?.tipo === "resultados";
+                const cantidad = jornada.partidos.length;
+                const activandoEsta = pendingActivacion && activandoJornada === jornada.numero;
 
-            return (
-              <section
-                key={jornada.numero}
-                aria-label={`Jornada ${jornada.numero}`}
-                className={`overflow-hidden rounded-2xl bg-chalk-0 ${
-                  esActiva ? "border-2 border-pitch-700" : "border border-line"
-                }`}
-              >
-                <div
-                  className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-3.5 ${
-                    esActiva ? "bg-pitch-700/5" : "bg-chalk-100"
-                  }`}
-                >
-                  <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleJornada(jornada.numero)}
-                      aria-expanded={abierta}
-                      className="flex items-center gap-2.5 text-left"
+                return (
+                  <section
+                    key={jornada.numero}
+                    aria-label={`Jornada ${jornada.numero}`}
+                    className={`overflow-hidden rounded-2xl bg-chalk-0 shadow-[0_1px_2px_rgba(16,36,26,0.04)] ${
+                      esActiva ? "border-2 border-pitch-700" : "border border-line"
+                    }`}
+                  >
+                    <div
+                      className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-5 py-4 ${
+                        esActiva ? "bg-pitch-700/5" : "bg-chalk-50"
+                      } ${abierta ? "border-b border-line" : ""}`}
                     >
-                      <span
-                        className={`inline-block w-2.5 text-xs text-ink-400 transition-transform ${
-                          abierta ? "rotate-90" : ""
-                        }`}
-                        aria-hidden="true"
-                      >
-                        ▸
-                      </span>
-                      <span className="font-display text-base font-bold text-ink-900">
-                        Jornada {jornada.numero}
-                      </span>
-                    </button>
-                    <span className="text-xs text-ink-600">
-                      {cantidad === 0 ? "Sin partidos" : `${cantidad} ${cantidad === 1 ? "partido" : "partidos"}`}
-                    </span>
-                    {esActiva && <MarcadorActiva activa />}
-                    {faltaHorario(jornada) && <ChipFaltaHorario />}
-                    {liquidada && (
-                      <Link
-                        href={`/admin/ligas/${ligaId}/ganadores?jornada=${jornada.numero}`}
-                        title="Jornada liquidada: los partidos no se pueden editar"
-                        className="inline-flex items-center gap-2 rounded-md bg-lime-400/25 px-2.5 py-1 font-mono text-[11px] font-semibold tracking-widest text-pitch-700 hover:bg-lime-400/40"
-                      >
-                        LIQUIDADA · VER GANADORES
-                      </Link>
-                    )}
-                  </div>
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleJornada(jornada.numero)}
+                          aria-expanded={abierta}
+                          className="flex items-center gap-2 text-left"
+                        >
+                          <ChevronRight
+                            className={`h-4 w-4 text-ink-400 transition-transform ${
+                              abierta ? "rotate-90" : ""
+                            }`}
+                            aria-hidden="true"
+                          />
+                          <span className="font-display text-lg font-bold text-ink-900">
+                            Jornada {jornada.numero}
+                          </span>
+                        </button>
+                        <span className="text-xs text-ink-600">
+                          {cantidad === 0 ? "Sin partidos" : `${cantidad} ${cantidad === 1 ? "partido" : "partidos"}`}
+                        </span>
+                        {esActiva && <MarcadorActiva activa />}
+                        {faltaHorario(jornada) && <ChipFaltaHorario />}
+                        {liquidada && (
+                          <Link
+                            href={`/admin/ligas/${ligaId}/ganadores?jornada=${jornada.numero}`}
+                            title="Jornada liquidada: los partidos no se pueden editar"
+                            className="inline-flex items-center gap-2 rounded-md bg-lime-400/25 px-2.5 py-1 font-mono text-[11px] font-semibold tracking-widest text-pitch-700 hover:bg-lime-400/40"
+                          >
+                            LIQUIDADA · VER GANADORES
+                          </Link>
+                        )}
+                      </div>
 
-                  {cantidad > 0 && !liquidada && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      {editandoAca ? (
-                        <>
-                          <BotonAccion
-                            variante="primario"
-                            onClick={() => guardarEdicion(jornada)}
-                            disabled={pendingGuardado}
-                          >
-                            {pendingGuardado
-                              ? "Guardando…"
-                              : editandoHorarios
-                                ? "Guardar horarios"
-                                : "Guardar resultados"}
-                          </BotonAccion>
-                          <BotonAccion onClick={cancelarEdicion} disabled={pendingGuardado}>
-                            Cancelar
-                          </BotonAccion>
-                        </>
-                      ) : (
-                        <>
-                          <BotonAccion onClick={() => empezarEdicion(jornada, "horarios")}>
-                            Editar horarios
-                          </BotonAccion>
-                          <BotonAccion
-                            variante={esActiva ? "primario" : "secundario"}
-                            onClick={() => empezarEdicion(jornada, "resultados")}
-                          >
-                            Cargar resultados
-                          </BotonAccion>
-                          {!esActiva && (
-                            <BotonAccion onClick={() => activar(jornada.numero)} disabled={activandoEsta}>
-                              {activandoEsta ? "Activando…" : "Activar"}
-                            </BotonAccion>
+                      {cantidad > 0 && !liquidada && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {editandoAca ? (
+                            <>
+                              <BotonAccion
+                                variante="primario"
+                                onClick={() => guardarEdicion(jornada)}
+                                disabled={pendingGuardado}
+                              >
+                                <Check className="h-4 w-4" aria-hidden="true" />
+                                {pendingGuardado
+                                  ? "Guardando…"
+                                  : editandoHorarios
+                                    ? "Guardar horarios"
+                                    : "Guardar resultados"}
+                              </BotonAccion>
+                              <BotonAccion onClick={cancelarEdicion} disabled={pendingGuardado}>
+                                Cancelar
+                              </BotonAccion>
+                            </>
+                          ) : (
+                            <>
+                              <BotonAccion onClick={() => empezarEdicion(jornada, "horarios")}>
+                                <Clock className="h-4 w-4" aria-hidden="true" />
+                                Editar horarios
+                              </BotonAccion>
+                              <BotonAccion
+                                variante={esActiva ? "primario" : "secundario"}
+                                onClick={() => empezarEdicion(jornada, "resultados")}
+                              >
+                                <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+                                Cargar resultados
+                              </BotonAccion>
+                              {!esActiva && (
+                                <BotonAccion onClick={() => activar(jornada.numero)} disabled={activandoEsta}>
+                                  <Play className="h-4 w-4" aria-hidden="true" />
+                                  {activandoEsta ? "Activando…" : "Activar"}
+                                </BotonAccion>
+                              )}
+                            </>
                           )}
-                        </>
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
 
-                {abierta && (
-                  <div className="flex flex-col">
-                    {cantidad === 0 ? (
-                      <p className="px-5 py-4 text-sm text-ink-600">
-                        Sin partidos cargados todavía en esta jornada.
-                      </p>
-                    ) : (
-                      jornada.partidos.map((partido, indice) => (
-                        <FilaCruce
-                          key={partido.id}
-                          ligaId={ligaId}
-                          partido={partido}
-                          indice={indice}
-                          horario={
-                            editandoHorarios
-                              ? {
-                                  valor: horarios[partido.id] ?? "",
-                                  onChange: (valor) =>
-                                    setHorarios((prev) => ({ ...prev, [partido.id]: valor })),
-                                }
-                              : undefined
-                          }
-                          resultado={
-                            editandoResultados
-                              ? {
-                                  valor: resultados[partido.id] ?? { local: "", visitante: "" },
-                                  onChange: (valor) =>
-                                    setResultados((prev) => ({ ...prev, [partido.id]: valor })),
-                                }
-                              : undefined
-                          }
-                          error={editandoAca ? errores[partido.id] : undefined}
-                        />
-                      ))
-                    )}
+                    {abierta && (
+                      <div className="flex flex-col">
+                        {cantidad === 0 ? (
+                          <p className="px-5 py-4 text-sm text-ink-600">
+                            Sin partidos cargados todavía en esta jornada.
+                          </p>
+                        ) : (
+                          jornada.partidos.map((partido, indice) => (
+                            <FilaCruce
+                              key={partido.id}
+                              ligaId={ligaId}
+                              partido={partido}
+                              indice={indice}
+                              horario={
+                                editandoHorarios
+                                  ? {
+                                      valor: horarios[partido.id] ?? "",
+                                      onChange: (valor) =>
+                                        setHorarios((prev) => ({ ...prev, [partido.id]: valor })),
+                                    }
+                                  : undefined
+                              }
+                              resultado={
+                                editandoResultados
+                                  ? {
+                                      valor: resultados[partido.id] ?? { local: "", visitante: "" },
+                                      onChange: (valor) =>
+                                        setResultados((prev) => ({ ...prev, [partido.id]: valor })),
+                                    }
+                                  : undefined
+                              }
+                              error={editandoAca ? errores[partido.id] : undefined}
+                            />
+                          ))
+                        )}
 
-                    {editandoAca && (
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-chalk-100 px-5 py-3">
-                        <p
-                          role={errorEdicion ? "alert" : undefined}
-                          className={`text-xs ${errorEdicion ? "font-medium text-coral-700" : "text-ink-600"}`}
-                        >
-                          {errorEdicion ??
-                            (editandoResultados
-                              ? "Los partidos sin goles quedan como estaban."
-                              : "Dejá un horario vacío para quitarlo.")}
-                        </p>
-                        <div className="flex gap-2">
-                          <BotonAccion onClick={cancelarEdicion} disabled={pendingGuardado}>
-                            Cancelar
-                          </BotonAccion>
-                          <BotonAccion
-                            variante="primario"
-                            onClick={() => guardarEdicion(jornada)}
-                            disabled={pendingGuardado}
-                          >
-                            {pendingGuardado
-                              ? "Guardando…"
-                              : editandoHorarios
-                                ? "Guardar horarios"
-                                : "Guardar resultados"}
-                          </BotonAccion>
-                        </div>
+                        {editandoAca && (
+                          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-chalk-50 px-5 py-3">
+                            <p
+                              role={errorEdicion ? "alert" : undefined}
+                              className={`text-xs ${errorEdicion ? "font-medium text-coral-700" : "text-ink-600"}`}
+                            >
+                              {errorEdicion ??
+                                (editandoResultados
+                                  ? "Los partidos sin goles quedan como estaban."
+                                  : "Dejá un horario vacío para quitarlo.")}
+                            </p>
+                            <div className="flex gap-2">
+                              <BotonAccion onClick={cancelarEdicion} disabled={pendingGuardado}>
+                                Cancelar
+                              </BotonAccion>
+                              <BotonAccion
+                                variante="primario"
+                                onClick={() => guardarEdicion(jornada)}
+                                disabled={pendingGuardado}
+                              >
+                                <Check className="h-4 w-4" aria-hidden="true" />
+                                {pendingGuardado
+                                  ? "Guardando…"
+                                  : editandoHorarios
+                                    ? "Guardar horarios"
+                                    : "Guardar resultados"}
+                              </BotonAccion>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
-              </section>
-            );
-          })}
+                  </section>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

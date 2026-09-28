@@ -13,6 +13,13 @@ export interface Plan {
 // Valores de ejemplo (placeholder): el usuario los va a ajustar más adelante.
 // Los slugs anticipan los nombres que va a tener la tabla `planes` real de
 // SPEC 04, para no tener que reconciliar nomenclatura cuando se implemente.
+// Datos de ejemplo (placeholder): reemplazar por los reales de la cuenta que cobra.
+export const DATOS_TRANSFERENCIA = {
+  alias: "prode.pagos",
+  cbu: "0000003100012345678901",
+  titular: "Prode App S.R.L.",
+} as const;
+
 export const PLANES: Plan[] = [
   {
     slug: "suelto",
@@ -55,4 +62,24 @@ export const PLANES: Plan[] = [
 
 export function obtenerPlan(slug: string): Plan | undefined {
   return PLANES.find((plan) => plan.slug === slug);
+}
+
+export function formatearPrecio(precio: number): string {
+  return precio.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
+}
+
+export function precioPorProde(plan: Plan): number {
+  return plan.precio / plan.cantidadCreditos;
+}
+
+// Descuento (en %) del precio por prode frente al plan suelto; null si no ahorra.
+export function ahorroVsSuelto(plan: Plan): number | null {
+  const base = PLANES.find((p) => p.tipo === "unico");
+  if (!base || plan.tipo === "unico") return null;
+  const ahorro = 1 - precioPorProde(plan) / precioPorProde(base);
+  return ahorro > 0 ? Math.round(ahorro * 100) : null;
 }

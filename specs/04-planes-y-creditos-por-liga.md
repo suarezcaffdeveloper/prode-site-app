@@ -97,6 +97,9 @@ Conventions:
 - `expira_en = <fin de ciclo>` → créditos de un plan `mensual`, dejan de contar para el saldo disponible una vez pasada esa fecha (no se borran, quedan como historial).
 - El saldo disponible de un usuario en una liga se calcula, no se guarda: `select coalesce(sum(cantidad_total - cantidad_usada), 0) from creditos_lotes where usuario_id = ? and liga_id = ? and (expira_en is null or expira_en > now())`.
 - `cantidad_usada` la actualiza SPEC 05 al consumir un crédito; en esta spec siempre se crea en `0`.
+- Vencimiento: `expira_en = now() + 30 días corridos` desde la compra (no fin de mes calendario).
+- Recompra: se puede comprar cualquier plan, incluso el mismo, las veces que se quiera y en cualquier momento (también con la suscripción activa y con saldo 0). Cada compra agrega un lote nuevo con su propio vencimiento; los lotes se apilan, no se renuevan ni se pisan.
+- Estado de la suscripción: `activa` significa "tiene al menos un lote vigente" (`expira_en` nulo o futuro), tenga o no saldo. Quedarse sin prodes NO la desactiva. Pasa sola a `inactiva` cuando vence el último lote del usuario en esa liga (función `vencer_suscripciones`, ejecutada de forma perezosa por la app antes de leer la membresía; no hay pg_cron). Los lotes `unico` no vencen, así que mantienen la suscripción activa.
 - No hay `update`/`delete` habilitados por RLS para nadie salvo lo que agregue SPEC 05 (consumo transaccional vía función `security definer`, ver esa spec) — desde esta spec, un lote es inmutable una vez creado.
 
 ## Implementation plan
@@ -104,7 +107,7 @@ Conventions:
 1. Migración SQL nueva (`supabase/migrations/<timestamp>_planes_y_creditos_init.sql`) con las dos tablas, policies y trigger de la sección Data model. Manual test: en el SQL editor, insertar un plan de ejemplo (`('Suelto x1', 'unico', 1, 1500)`) y un lote de créditos para un usuario/liga de prueba; confirmar que el `check (cantidad_usada <= cantidad_total)` rechaza un `update` que intente poner `cantidad_usada = cantidad_total + 1`.
 2. Seed manual de planes iniciales (vía SQL editor o una migración de datos separada), por ejemplo: "1 prode" (unico, 1 crédito), "4 prodes/mes" (mensual, 4 créditos, precio con descuento), "10 prodes/mes" (mensual, 10 créditos, precio con más descuento). Manual test: confirmar que los tres aparecen con `activo = true`.
 3. Crear `src/lib/creditos.ts` con una función `calcularSaldoDisponible(lotes: {cantidad_total, cantidad_usada, expira_en}[]): number` (pura, sin acceso a red) que replica la lógica SQL del saldo, para poder mostrar el mismo número tanto en server components como en validaciones. Manual test: casos manuales (lote sin vencer con saldo parcial, lote vencido no debe sumar, mezcla de ambos).
-4. En `admin/ligas/[id]/usuarios/actions.ts`, agregar `otorgarPlan(ligaId, membresiaId, usuarioId, formData)`: lee `plan_id` del form, busca el plan, calcula `expira_en` (`null` si `tipo = 'unico'`, `now() + interval '1 month'` si `tipo = 'mensual'`) e inserta el lote en `creditos_lotes`. Manual test: desde el admin, otorgar un plan mensual a un usuario y confirmar en la base que el lote quedó con `expira_en` a 1 mes.
+4. En `admin/ligas/[id]/usuarios/actions.ts`, agregar `otorgarPlan(ligaId, membresiaId, usuarioId, formData)`: lee `plan_id` del form, busca el plan, calcula `expira_en` (`null` si `tipo = 'unico'`, `now() + interval '30 days'` si `tipo = 'mensual'`) e inserta el lote en `creditos_lotes`. Manual test: desde el admin, otorgar un plan mensual a un usuario y confirmar en la base que el lote quedó con `expira_en` a 1 mes.
 5. Extender `admin/ligas/[id]/usuarios/page.tsx`: junto a cada membresía, mostrar el saldo actual de créditos del usuario en esa liga (usando `calcularSaldoDisponible`) y un selector de plan + botón "Otorgar" que llama a `otorgarPlan`. Manual test: otorgar dos planes seguidos al mismo usuario (uno suelto, uno mensual) y confirmar que el saldo mostrado suma ambos correctamente.
 6. Mostrar el saldo de créditos del usuario logueado en `ligas/[id]/page.tsx` (vista pública de la liga), reutilizando `calcularSaldoDisponible` sobre sus propios lotes. Manual test: con un usuario sin créditos otorgados, confirmar que se muestra saldo `0` sin error.
 
@@ -114,7 +117,10 @@ Conventions:
 - [ ] Solo el admin puede crear o modificar planes.
 - [ ] El admin puede otorgar un plan a un usuario en una liga puntual desde `admin/ligas/[id]/usuarios/`.
 - [ ] Otorgar un plan `unico` crea un lote con `expira_en = null`.
-- [ ] Otorgar un plan `mensual` crea un lote con `expira_en` seteado a 1 mes desde el otorgamiento.
+- [ ] Otorgar un plan `mensual` crea un lote con `expira_en` seteado a 30 días corridos desde el otorgamiento.
+- [ ] Un usuario con suscripción activa puede comprar más planes (incluso el mismo) en cualquier momento; los lotes se acumulan.
+- [ ] Un usuario activo con saldo 0 pero con un lote vigente sigue `activa` y ve cómo comprar más prodes.
+- [ ] Cuando vence el último lote de un usuario en una liga, su suscripción pasa a `inactiva`.
 - [ ] El saldo disponible de un usuario en una liga es la suma de `cantidad_total - cantidad_usada` de sus lotes no vencidos en esa liga.
 - [ ] Un lote vencido (`expira_en` pasado) deja de sumar al saldo disponible, aunque siga existiendo en la base como historial.
 - [ ] Un usuario nunca puede crear su propio lote de créditos (solo el admin puede insertar en `creditos_lotes`).

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { ConfirmDeleteButton } from "@/components/ui/confirm-delete-button";
@@ -56,13 +58,22 @@ export default async function EditarPartidoPage({
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <div>
-        <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
-          PARTIDOS
-        </p>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink-900">
-          Editar partido
-        </h1>
+      <div className="flex flex-col gap-4">
+        <Link
+          href={`/admin/ligas/${id}/partidos`}
+          className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-ink-600 transition-colors hover:text-pitch-700"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Volver a partidos
+        </Link>
+        <div>
+          <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
+            PARTIDOS
+          </p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-ink-900">
+            Editar partido
+          </h1>
+        </div>
       </div>
       <Card className="p-6">
         <PartidoForm
@@ -84,6 +95,7 @@ export default async function EditarPartidoPage({
       </Card>
       <div className="flex justify-end">
         <ConfirmDeleteButton
+          compact
           label="Borrar partido"
           confirmLabel="¿Borrar este partido? No se puede deshacer."
           action={borrarPartido.bind(null, id, partido.id)}

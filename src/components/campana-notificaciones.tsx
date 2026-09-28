@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   CalendarClock,
+  CalendarX,
   Clock,
   CirclePlay,
   CreditCard,
@@ -31,6 +32,7 @@ const ICONOS: Record<TipoNotificacion, { icono: LucideIcon; tono: string }> = {
   plan_acreditado: { icono: CreditCard, tono: "bg-pitch-600/10 text-pitch-700" },
   cierra_pronto: { icono: Clock, tono: "bg-amber-500/15 text-amber-700" },
   creditos_por_vencer: { icono: CalendarClock, tono: "bg-amber-500/15 text-amber-700" },
+  suscripcion_vencida: { icono: CalendarX, tono: "bg-coral-500/15 text-coral-700" },
 };
 
 function tiempoRelativo(iso: string): string {

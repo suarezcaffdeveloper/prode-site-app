@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { generarCodigoInvitacion } from "@/lib/codigo-invitacion";
 import { obtenerPlan } from "@/lib/planes";
 import type { SupabaseClient } from "@supabase/supabase-js";
-
 type State = { error?: string };
 type ElegirPlanState = { error?: string; success?: boolean };
 
@@ -129,9 +128,16 @@ export async function crearGrupo(
     return { error: "No pudimos generar un código único. Intentá de nuevo." };
   }
 
-  await supabase
+  // El creador tiene que quedar como miembro: sin esa fila no puede ver el
+  // ranking del subgrupo. Si falla, se deshace el grupo para no dejarlo huérfano.
+  const { error: errorMembresia } = await supabase
     .from("membresias_grupo")
     .insert({ grupo_id: grupoId, usuario_id: user.id });
+
+  if (errorMembresia) {
+    await supabase.from("grupos").delete().eq("id", grupoId);
+    return { error: "No pudimos crear el subgrupo. Intentá de nuevo." };
+  }
 
   revalidatePath(`/ligas/${ligaId}`, "layout");
   redirect(`/grupos/${grupoId}`);

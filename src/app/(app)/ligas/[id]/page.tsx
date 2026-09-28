@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { obtenerMembresia } from "@/lib/suscripcion";
 import { Card } from "@/components/ui/card";
 import { MarcadorEstado, MarcadorCodigo } from "@/components/ui/marcador";
 import { calcularSaldoDisponible } from "@/lib/creditos";
@@ -15,6 +16,7 @@ import { LigaHero, type EstadoJornada } from "./liga-hero";
 import { InicioPartidos, type PartidoInicio } from "./inicio-partidos";
 import { InicioTablaResumen } from "./inicio-tabla-resumen";
 import { InicioComoSeJuega } from "./inicio-como-se-juega";
+import { Reveal } from "@/components/landing/reveal";
 
 type EquipoRow = { id: string; nombre: string; escudo_url: string | null };
 
@@ -36,7 +38,7 @@ export default async function LigaInicioPage({
 
   const { data: liga } = await supabase
     .from("ligas")
-    .select("id, nombre, descripcion, activa")
+    .select("id, nombre, descripcion, activa, logo_url")
     .eq("id", id)
     .single();
 
@@ -46,13 +48,8 @@ export default async function LigaInicioPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: membresia }, { data: activaData }] = await Promise.all([
-    supabase
-      .from("membresias_liga")
-      .select("estado_suscripcion")
-      .eq("liga_id", id)
-      .eq("usuario_id", user!.id)
-      .maybeSingle(),
+  const [membresia, { data: activaData }] = await Promise.all([
+    obtenerMembresia(supabase, id, user!.id),
     supabase.rpc("jornada_activa", { p_liga_id: id }),
   ]);
 
@@ -153,11 +150,24 @@ export default async function LigaInicioPage({
 
   const mostrarAnterior = pozoAnterior?.liquidada === true;
 
+  const hayPartidos = jornadaActiva !== null && partidos.length > 0;
+  const hayLateral = (mostrarAnterior && !!pozoAnterior) || tabla.length > 0 || tieneSuscripcionActiva;
+
+  // Escritorio: partidos a la izquierda y lateral (resultado anterior, tabla,
+  // subgrupos) a la derecha. Si falta uno de los dos, el otro toma todo el ancho.
+  const claseColumnas = hayPartidos && hayLateral ? "lg:grid-cols-12" : "lg:grid-cols-1";
+  const clasePartidos = hayLateral ? "lg:col-span-8" : "";
+  const claseLateral = hayPartidos
+    ? "lg:col-span-4"
+    : "lg:grid lg:grid-cols-2 lg:items-start lg:gap-10";
+
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 lg:max-w-none lg:gap-12">
       <LigaHero
         ligaId={id}
         nombre={liga.nombre}
+        descripcion={liga.descripcion}
+        logoUrl={liga.logo_url}
         jornada={jornadaActiva}
         estadoJornada={estadoJornada}
         horaCierre={activa?.hora_cierre ?? null}
@@ -167,12 +177,12 @@ export default async function LigaInicioPage({
         cargados={cargados}
       />
 
-      {liga.descripcion && <p className="-mt-4 text-sm text-ink-600">{liga.descripcion}</p>}
+      {liga.descripcion && <p className="-mt-4 text-sm text-ink-600 lg:hidden">{liga.descripcion}</p>}
 
       {!tieneSuscripcionActiva && <InicioComoSeJuega />}
 
       {membresia?.estado_suscripcion === "pendiente" && (
-        <Card className="flex flex-col gap-3 p-5">
+        <Card className="flex flex-col gap-3 p-5 lg:p-6">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-ink-900">Tu suscripción</p>
             <MarcadorEstado estado="pendiente" />
@@ -186,7 +196,7 @@ export default async function LigaInicioPage({
       )}
 
       {membresia?.estado_suscripcion === "inactiva" && (
-        <Card className="flex flex-col gap-3 p-5">
+        <Card className="flex flex-col gap-3 p-5 lg:p-6">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-ink-900">Tu suscripción</p>
             <MarcadorEstado estado="inactiva" />
@@ -198,77 +208,98 @@ export default async function LigaInicioPage({
         </Card>
       )}
 
-      {jornadaActiva !== null && partidos.length > 0 && (
-        <InicioPartidos ligaId={id} jornada={jornadaActiva} partidos={partidos} />
-      )}
-
-      {mostrarAnterior && pozoAnterior && jornadaActiva !== null && (
-        <Card className="flex items-center gap-4 p-5">
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lime-400/25 text-pitch-700"
-            aria-hidden="true"
-          >
-            <Trophy className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-mono text-[10px] font-semibold tracking-widest text-ink-400">
-              FECHA {jornadaActiva - 1} · RESULTADO
-            </p>
-            {pozoAnterior.cantidad_ganadores === 0 ? (
-              <p className="text-sm text-ink-900">
-                <strong>Sin ganadores.</strong> Los {formatearPesos(pozoAnterior.pozo_total)} del
-                pozo se acumularon a esta fecha.
-              </p>
-            ) : (
-              <p className="text-sm text-ink-900">
-                <strong>{formatearPesos(pozoAnterior.pozo_total)}</strong> repartidos entre{" "}
-                {pozoAnterior.cantidad_ganadores}{" "}
-                {pozoAnterior.cantidad_ganadores === 1 ? "prode ganador" : "prodes ganadores"}.
-              </p>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {tabla.length > 0 && <InicioTablaResumen ligaId={id} filas={tabla} />}
-
-      {tieneSuscripcionActiva && (
-        <section className="flex flex-col gap-3">
-          <div>
-            <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
-              SUBGRUPOS
-            </p>
-            <h2 className="font-display text-xl font-bold tracking-tight text-ink-900">
-              Jugá con tus amigos
-            </h2>
-          </div>
-
-          {misGrupos.length > 0 ? (
-            <ul className="flex flex-col gap-3">
-              {misGrupos.map((grupo) => (
-                <li key={grupo.id}>
-                  <Link href={`/grupos/${grupo.id}`}>
-                    <Card className="flex items-center justify-between gap-4 p-5 transition-colors hover:border-pitch-500">
-                      <p className="font-medium text-ink-900">{grupo.nombre}</p>
-                      <MarcadorCodigo codigo={grupo.codigo_invitacion} />
-                    </Card>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Card className="p-5 text-sm text-ink-600">
-              Todavía no estás en ningún subgrupo.
-            </Card>
+      {(hayPartidos || hayLateral) && (
+        <div className={`flex flex-col gap-8 lg:grid lg:items-start lg:gap-10 ${claseColumnas}`}>
+          {hayPartidos && jornadaActiva !== null && (
+            <div className={clasePartidos}>
+              <InicioPartidos ligaId={id} jornada={jornadaActiva} partidos={partidos} />
+            </div>
           )}
 
-          <Link
-            href={`/ligas/${id}/planes#subgrupos`}
-            className="text-sm font-medium text-pitch-700 hover:underline"
-          >
-            Crear o unirme a un subgrupo →
-          </Link>
-        </section>
+          {hayLateral && (
+            <div className={`flex flex-col gap-8 ${claseLateral}`}>
+              {mostrarAnterior && pozoAnterior && jornadaActiva !== null && (
+                <Reveal soloEscritorio>
+                  <Card className="flex items-center gap-4 p-5">
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lime-400/25 text-pitch-700"
+                      aria-hidden="true"
+                    >
+                      <Trophy className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-mono text-[10px] font-semibold tracking-widest text-ink-400">
+                        FECHA {jornadaActiva - 1} · RESULTADO
+                      </p>
+                      {pozoAnterior.cantidad_ganadores === 0 ? (
+                        <p className="text-sm text-ink-900">
+                          <strong>Sin ganadores.</strong> Los {formatearPesos(pozoAnterior.pozo_total)}{" "}
+                          del pozo se acumularon a esta fecha.
+                        </p>
+                      ) : (
+                        <p className="text-sm text-ink-900">
+                          <strong>{formatearPesos(pozoAnterior.pozo_total)}</strong> repartidos entre{" "}
+                          {pozoAnterior.cantidad_ganadores}{" "}
+                          {pozoAnterior.cantidad_ganadores === 1
+                            ? "prode ganador"
+                            : "prodes ganadores"}
+                          .
+                        </p>
+                      )}
+                    </div>
+                  </Card>
+                </Reveal>
+              )}
+
+              {tabla.length > 0 && (
+                <Reveal soloEscritorio retraso={80}>
+                  <InicioTablaResumen ligaId={id} filas={tabla} />
+                </Reveal>
+              )}
+
+              {tieneSuscripcionActiva && (
+                <Reveal soloEscritorio retraso={160}>
+                  <section className="flex flex-col gap-3">
+                    <div>
+                      <p className="font-mono text-xs font-semibold tracking-[0.3em] text-pitch-600">
+                        SUBGRUPOS
+                      </p>
+                      <h2 className="font-display text-xl font-bold tracking-tight text-ink-900 lg:text-2xl">
+                        Jugá con tus amigos
+                      </h2>
+                    </div>
+
+                    {misGrupos.length > 0 ? (
+                      <ul className="flex flex-col gap-3">
+                        {misGrupos.map((grupo) => (
+                          <li key={grupo.id}>
+                            <Link href={`/grupos/${grupo.id}`}>
+                              <Card className="flex items-center justify-between gap-4 p-5 transition-all hover:border-pitch-500 lg:hover:-translate-y-0.5 lg:hover:shadow-[0_12px_28px_rgba(16,36,26,0.08)]">
+                                <p className="font-medium text-ink-900">{grupo.nombre}</p>
+                                <MarcadorCodigo codigo={grupo.codigo_invitacion} />
+                              </Card>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <Card className="p-5 text-sm text-ink-600">
+                        Todavía no estás en ningún subgrupo.
+                      </Card>
+                    )}
+
+                    <Link
+                      href={`/ligas/${id}/planes#subgrupos`}
+                      className="text-sm font-medium text-pitch-700 hover:underline"
+                    >
+                      Crear o unirme a un subgrupo →
+                    </Link>
+                  </section>
+                </Reveal>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {tieneSuscripcionActiva && <InicioComoSeJuega />}

@@ -36,7 +36,7 @@
 
 - Pago efectivo del premio (transferencia al ganador) y marca de "pagado".
 - Mostrar nombres o identidad de los ganadores a otros usuarios (los usuarios solo ven el monto del pozo y, en jornadas liquidadas, la cantidad de ganadores).
-- Premios parciales: segundo lugar, aciertos de signo, puntos por partido, ranking de usuarios.
+- Premios parciales: segundo lugar, aciertos de signo, puntos por partido, ranking de usuarios. (El ranking por puntos **dentro de subgrupos**, sin premios ni pozo, vive en SPEC 10; el pozo y la regla de ganador de esta spec no cambian.)
 - Configurar el porcentaje del pozo desde la UI (queda en la columna `ligas.porcentaje_pozo`, editable solo por SQL).
 - Envío automático de emails, cron jobs o notificaciones push/in-app.
 - Cliente con service role (todo corre con la sesión del admin y RLS).
