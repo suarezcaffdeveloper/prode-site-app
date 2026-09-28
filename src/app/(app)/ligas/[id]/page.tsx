@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/usuario-actual";
 import { obtenerMembresia } from "@/lib/suscripcion";
 import { Card } from "@/components/ui/card";
 import { MarcadorEstado, MarcadorCodigo } from "@/components/ui/marcador";
@@ -36,17 +37,17 @@ export default async function LigaInicioPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: liga } = await supabase
-    .from("ligas")
-    .select("id, nombre, descripcion, activa, logo_url")
-    .eq("id", id)
-    .single();
+  // liga y usuario son independientes entre sí: van en paralelo.
+  const [{ data: liga }, user] = await Promise.all([
+    supabase
+      .from("ligas")
+      .select("id, nombre, descripcion, activa, logo_url")
+      .eq("id", id)
+      .single(),
+    getAuthUser(),
+  ]);
 
   if (!liga || !liga.activa) notFound();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const [membresia, { data: activaData }] = await Promise.all([
     obtenerMembresia(supabase, id, user!.id),

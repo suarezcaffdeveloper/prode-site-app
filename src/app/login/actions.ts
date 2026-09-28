@@ -14,8 +14,13 @@ function traducirError(mensaje: string) {
   return "No pudimos iniciar sesión. Intentá de nuevo.";
 }
 
-export async function iniciarSesion(_prevState: unknown, formData: FormData) {
-  const email = String(formData.get("email") ?? "");
+export type EstadoLogin = { error?: string; emailSinConfirmar?: string };
+
+export async function iniciarSesion(
+  _prevState: EstadoLogin,
+  formData: FormData,
+): Promise<EstadoLogin> {
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
@@ -26,6 +31,11 @@ export async function iniciarSesion(_prevState: unknown, formData: FormData) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    // Distinguimos este caso para ofrecer el botón de reenvío de confirmación
+    // (SPEC 11) en vez de solo mostrar el mensaje de error.
+    if (error.message.includes("Email not confirmed")) {
+      return { error: traducirError(error.message), emailSinConfirmar: email };
+    }
     return { error: traducirError(error.message) };
   }
 

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/usuario-actual";
 import { obtenerPozoJornada } from "@/lib/pozo";
 import { CatalogoHero } from "./catalogo-hero";
 import {
@@ -10,21 +11,21 @@ import { CatalogoHeroMovil, CatalogoListaMovil } from "./catalogo-movil";
 
 export default async function LigasPage() {
   const supabase = await createClient();
-  const [{ data: ligas }, { data: auth }] = await Promise.all([
+  const [{ data: ligas }, user] = await Promise.all([
     supabase
       .from("ligas")
       .select("id, nombre, descripcion, logo_url")
       .eq("activa", true)
       .order("nombre"),
-    supabase.auth.getUser(),
+    getAuthUser(),
   ]);
 
-  if (auth.user) await supabase.rpc("vencer_suscripciones");
-  const { data: membresias } = auth.user
+  if (user) await supabase.rpc("vencer_suscripciones");
+  const { data: membresias } = user
     ? await supabase
         .from("membresias_liga")
         .select("liga_id, estado_suscripcion")
-        .eq("usuario_id", auth.user.id)
+        .eq("usuario_id", user.id)
     : { data: null };
   const membresiaPorLiga = new Map((membresias ?? []).map((m) => [m.liga_id, m.estado_suscripcion]));
 

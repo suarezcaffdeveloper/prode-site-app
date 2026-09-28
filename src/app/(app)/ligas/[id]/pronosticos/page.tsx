@@ -2,13 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClipboardList } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/usuario-actual";
 import { obtenerMembresia } from "@/lib/suscripcion";
 import { Card } from "@/components/ui/card";
 import { Reveal } from "@/components/landing/reveal";
 import { Escudo } from "@/components/ui/escudo";
 import { MarcadorResultado } from "@/components/ui/marcador";
 import { calcularSaldoDisponible } from "@/lib/creditos";
-import { formatearPesos, obtenerPozoJornada } from "@/lib/pozo";
+import { formatearPesos, obtenerPozoJornada, type PozoJornada } from "@/lib/pozo";
 import { crearCarton, actualizarCarton, elegirCartonPrincipal } from "./actions";
 import { NuevoCartonForm } from "./nuevo-carton-form";
 import { CartonCard } from "./carton-card";
@@ -61,15 +62,12 @@ export default async function PronosticosLigaPage({
   if (ligaError) throw new Error(`No se pudo cargar la liga ${id}: ${ligaError.message}`);
   if (!liga || !liga.activa) notFound();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // user y jornada activa son independientes entre sí: van en paralelo.
+  const [user, { data: activaData }] = await Promise.all([
+    getAuthUser(),
+    supabase.rpc("jornada_activa", { p_liga_id: id }),
+  ]);
 
-  const membresia = await obtenerMembresia(supabase, id, user!.id);
-
-  const tieneSuscripcionActiva = membresia?.estado_suscripcion === "activa";
-
-  const { data: activaData } = await supabase.rpc("jornada_activa", { p_liga_id: id });
   const activa =
     (activaData as { jornada: number; hora_cierre: string | null }[] | null)?.[0] ?? null;
   const jornadaActual = activa?.jornada ?? null;
@@ -82,26 +80,39 @@ export default async function PronosticosLigaPage({
         ? "cerrada"
         : "abierta";
 
-  const partidosPorJornada = new Map<number, Partido[]>();
-  if (tieneSuscripcionActiva) {
-    const { data: todosPartidos } = await supabase
-      .from("partidos")
-      .select(
-        `id, jornada, fecha_hora, goles_local, goles_visitante, estado,
-         equipo_local:equipo_local_id (id, nombre, escudo_url),
-         equipo_visitante:equipo_visitante_id (id, nombre, escudo_url)`,
-      )
-      .eq("liga_id", id)
-      .order("jornada", { ascending: true })
-      .order("created_at", { ascending: true })
-      .returns<Partido[]>();
+  const membresia = await obtenerMembresia(supabase, id, user!.id);
+  const tieneSuscripcionActiva = membresia?.estado_suscripcion === "activa";
 
-    for (const partido of todosPartidos ?? []) {
-      const grupo = partidosPorJornada.get(partido.jornada) ?? [];
-      grupo.push(partido);
-      partidosPorJornada.set(partido.jornada, grupo);
-    }
+  // El fixture completo y el conteo de subgrupos no dependen entre sí: van
+  // en la misma ronda.
+  const [partidosRes, gruposCountRes] = await Promise.all([
+    tieneSuscripcionActiva
+      ? supabase
+          .from("partidos")
+          .select(
+            `id, jornada, fecha_hora, goles_local, goles_visitante, estado,
+             equipo_local:equipo_local_id (id, nombre, escudo_url),
+             equipo_visitante:equipo_visitante_id (id, nombre, escudo_url)`,
+          )
+          .eq("liga_id", id)
+          .order("jornada", { ascending: true })
+          .order("created_at", { ascending: true })
+          .returns<Partido[]>()
+      : null,
+    // RLS en "grupos" ya limita el resultado a los subgrupos donde el usuario
+    // es creador o miembro (policy grupos_select_miembro_o_admin).
+    tieneSuscripcionActiva
+      ? supabase.from("grupos").select("id", { count: "exact", head: true }).eq("liga_id", id)
+      : null,
+  ]);
+
+  const partidosPorJornada = new Map<number, Partido[]>();
+  for (const partido of partidosRes?.data ?? []) {
+    const grupo = partidosPorJornada.get(partido.jornada) ?? [];
+    grupo.push(partido);
+    partidosPorJornada.set(partido.jornada, grupo);
   }
+  const enSubgrupos = (gruposCountRes?.count ?? 0) > 0;
 
   // El filtro ofrece todas las fechas con fixture cargado, anteriores o
   // posteriores a la activa: para una fecha que no es la activa, cada
@@ -121,43 +132,35 @@ export default async function PronosticosLigaPage({
 
   let saldo = 0;
   let cartones: CartonConPronosticos[] = [];
-  let enSubgrupos = false;
+  let pozo: PozoJornada | null = null;
 
   if (tieneSuscripcionActiva && jornadaSeleccionada !== null) {
-    // RLS en "grupos" ya limita el resultado a los subgrupos donde el usuario
-    // es creador o miembro (policy grupos_select_miembro_o_admin).
-    const { count: cantidadGrupos } = await supabase
-      .from("grupos")
-      .select("id", { count: "exact", head: true })
-      .eq("liga_id", id);
-    enSubgrupos = (cantidadGrupos ?? 0) > 0;
-
-    if (esActivaSeleccionada) {
-      const { data: lotes } = await supabase
-        .from("creditos_lotes")
-        .select("cantidad_total, cantidad_usada, expira_en")
+    // Créditos, cartones y pozo son independientes entre sí: misma ronda.
+    const [lotesRes, cartonesRes, pozoResuelto] = await Promise.all([
+      esActivaSeleccionada
+        ? supabase
+            .from("creditos_lotes")
+            .select("cantidad_total, cantidad_usada, expira_en")
+            .eq("usuario_id", user!.id)
+            .eq("liga_id", id)
+        : null,
+      supabase
+        .from("cartones")
+        .select(
+          "id, created_at, es_principal, pronosticos (partido_id, goles_local_prediccion, goles_visitante_prediccion)",
+        )
+        .eq("liga_id", id)
+        .eq("jornada", jornadaSeleccionada)
         .eq("usuario_id", user!.id)
-        .eq("liga_id", id);
-      saldo = calcularSaldoDisponible(lotes ?? []);
-    }
+        .order("created_at", { ascending: true })
+        .returns<CartonConPronosticos[]>(),
+      obtenerPozoJornada(supabase, id, jornadaSeleccionada),
+    ]);
 
-    const { data: cartonesData } = await supabase
-      .from("cartones")
-      .select(
-        "id, created_at, es_principal, pronosticos (partido_id, goles_local_prediccion, goles_visitante_prediccion)",
-      )
-      .eq("liga_id", id)
-      .eq("jornada", jornadaSeleccionada)
-      .eq("usuario_id", user!.id)
-      .order("created_at", { ascending: true })
-      .returns<CartonConPronosticos[]>();
-    cartones = cartonesData ?? [];
+    saldo = calcularSaldoDisponible(lotesRes?.data ?? []);
+    cartones = cartonesRes.data ?? [];
+    pozo = pozoResuelto;
   }
-
-  const pozo =
-    tieneSuscripcionActiva && jornadaSeleccionada !== null
-      ? await obtenerPozoJornada(supabase, id, jornadaSeleccionada)
-      : null;
 
   const partidoIds = partidosSeleccionados.map((p) => p.id);
   const cargados = cartones.length;

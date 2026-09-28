@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { obtenerGrupo } from "@/lib/grupo-actual";
 import { LigaBottomNav } from "@/components/liga-bottom-nav";
 import { FijarLigaActiva } from "@/components/liga-activa-store";
 
@@ -12,13 +12,9 @@ export default async function GrupoLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const { data: grupo } = await supabase
-    .from("grupos")
-    .select("liga_id")
-    .eq("id", id)
-    .maybeSingle();
+  // Memoizado (React.cache): la page del mismo subgrupo reutiliza esta
+  // misma lectura en vez de repetir el select a "grupos".
+  const grupo = await obtenerGrupo(id);
 
   if (!grupo) return <>{children}</>;
 

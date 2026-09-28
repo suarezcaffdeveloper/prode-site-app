@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/usuario-actual";
 import { obtenerMembresia } from "@/lib/suscripcion";
 import { Card } from "@/components/ui/card";
 import { Escudo } from "@/components/ui/escudo";
@@ -29,31 +30,28 @@ export default async function FixtureLigaPage({ params }: { params: Promise<{ id
   if (ligaError) throw new Error(`No se pudo cargar la liga ${id}: ${ligaError.message}`);
   if (!liga || !liga.activa) notFound();
 
-  const { data: activaData } = await supabase.rpc("jornada_activa", {
-    p_liga_id: id,
-  });
+  // jornada_activa, el usuario y el fixture no dependen entre sí: van en
+  // paralelo (el fixture es público de la liga, no depende de la membresía).
+  const [{ data: activaData }, user, { data: partidos }] = await Promise.all([
+    supabase.rpc("jornada_activa", { p_liga_id: id }),
+    getAuthUser(),
+    supabase
+      .from("partidos")
+      .select(
+        `id, jornada, fecha_hora, goles_local, goles_visitante, estado,
+         equipo_local:equipo_local_id (id, nombre, escudo_url),
+         equipo_visitante:equipo_visitante_id (id, nombre, escudo_url)`,
+      )
+      .eq("liga_id", id)
+      .order("jornada", { ascending: true })
+      .order("created_at", { ascending: true })
+      .returns<Partido[]>(),
+  ]);
   const activa =
     (activaData as { jornada: number; hora_cierre: string | null }[] | null)?.[0] ?? null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const membresia = await obtenerMembresia(supabase, id, user!.id);
-
   const tieneSuscripcionActiva = membresia?.estado_suscripcion === "activa";
-
-  const { data: partidos } = await supabase
-    .from("partidos")
-    .select(
-      `id, jornada, fecha_hora, goles_local, goles_visitante, estado,
-       equipo_local:equipo_local_id (id, nombre, escudo_url),
-       equipo_visitante:equipo_visitante_id (id, nombre, escudo_url)`,
-    )
-    .eq("liga_id", id)
-    .order("jornada", { ascending: true })
-    .order("created_at", { ascending: true })
-    .returns<Partido[]>();
 
   const jornadas = new Map<number, Partido[]>();
   for (const partido of partidos ?? []) {

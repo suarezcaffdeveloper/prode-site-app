@@ -5,16 +5,20 @@ import Link from "next/link";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { GoogleButton } from "@/components/auth/google-button";
 import { Field } from "@/components/ui/field";
+import { PasswordField } from "@/components/ui/password-field";
 import { Button } from "@/components/ui/button";
-import { iniciarSesion, iniciarSesionConGoogle } from "./actions";
-
-type State = { error?: string };
+import { reenviarConfirmacion, type EstadoReenvio } from "@/lib/auth-actions";
+import { iniciarSesion, iniciarSesionConGoogle, type EstadoLogin } from "./actions";
 
 export default function LoginPage() {
-  const [state, formAction, pending] = useActionState<State, FormData>(
+  const [state, formAction, pending] = useActionState<EstadoLogin, FormData>(
     iniciarSesion,
     {},
   );
+  const [estadoReenvio, reenviarAction, reenviando] = useActionState<
+    EstadoReenvio,
+    FormData
+  >(reenviarConfirmacion, {});
 
   return (
     <AuthShell
@@ -38,10 +42,9 @@ export default function LoginPage() {
           autoComplete="email"
           required
         />
-        <Field
+        <PasswordField
           label="Contraseña"
           name="password"
-          type="password"
           autoComplete="current-password"
           required
         />
@@ -54,6 +57,35 @@ export default function LoginPage() {
           Iniciar sesión
         </Button>
       </form>
+
+      {state?.emailSinConfirmar && (
+        <div className="mt-4 rounded-lg border border-line-strong bg-chalk-100 p-4">
+          {estadoReenvio?.exito ? (
+            <p className="text-sm font-medium text-pitch-700">{estadoReenvio.exito}</p>
+          ) : (
+            <form action={reenviarAction} className="flex flex-col gap-2">
+              <input type="hidden" name="email" value={state.emailSinConfirmar} />
+              <p className="text-sm text-ink-600">
+                ¿No te llegó el email? Podemos reenviarlo.
+              </p>
+              {estadoReenvio?.error && (
+                <p role="alert" className="text-xs font-medium text-coral-700">
+                  {estadoReenvio.error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                variant="secondary"
+                size="sm"
+                loading={reenviando}
+                className="w-fit"
+              >
+                Reenviar email de confirmación
+              </Button>
+            </form>
+          )}
+        </div>
+      )}
 
       <div className="my-6 flex items-center gap-3" aria-hidden="true">
         <div className="h-px flex-1 bg-line" />

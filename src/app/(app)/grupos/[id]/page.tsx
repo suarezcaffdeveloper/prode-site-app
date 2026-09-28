@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/usuario-actual";
+import { obtenerGrupo } from "@/lib/grupo-actual";
 import { Card } from "@/components/ui/card";
 import {
   calcularDetalleJornada,
@@ -92,17 +94,11 @@ export default async function GrupoDetallePage({
   const { jornada: jornadaParam } = await searchParams;
   const supabase = await createClient();
 
-  const { data: grupo } = await supabase
-    .from("grupos")
-    .select("id, nombre, liga_id, creador_id, codigo_invitacion")
-    .eq("id", id)
-    .single();
+  // grupo (memoizado, compartido con el layout) y usuario son independientes.
+  const [grupo, user] = await Promise.all([obtenerGrupo(id), getAuthUser()]);
 
   if (!grupo) notFound();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   const usuarioId = user!.id;
   const esCreador = usuarioId === grupo.creador_id;
 

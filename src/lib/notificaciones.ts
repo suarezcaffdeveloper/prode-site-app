@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuarioActual } from "@/lib/usuario-actual";
 
 export type TipoNotificacion =
   | "ganaste"
@@ -57,8 +58,18 @@ export async function obtenerNotificaciones(): Promise<Notificacion[]> {
   const supabase = await createClient();
 
   // Genera los avisos que dependen del tiempo (cierre cercano, créditos por
-  // vencer). Es idempotente; si falla, la campana igual muestra lo existente.
-  await supabase.rpc("sincronizar_avisos");
+  // vencer). Es idempotente y barata cuando no tiene nada que hacer, pero
+  // igual se saltea si ya corrió hace menos de 1 minuto (debounce por
+  // ultimo_sync_avisos, ver migración 20261003100100) para no pagarla en
+  // cada navegación.
+  const usuario = await getUsuarioActual();
+  const haceMasDeUnMinuto =
+    !usuario?.ultimo_sync_avisos ||
+    Date.now() - new Date(usuario.ultimo_sync_avisos).getTime() > 60_000;
+
+  if (haceMasDeUnMinuto) {
+    await supabase.rpc("sincronizar_avisos");
+  }
 
   const { data } = await supabase
     .from("notificaciones")

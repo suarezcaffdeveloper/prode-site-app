@@ -91,8 +91,8 @@ export async function enviarAvisoGanadores(
     return { error: "No tenés permisos para hacer esto." };
   }
 
-  if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
-    return { error: "Falta configurar RESEND_API_KEY y EMAIL_FROM para enviar emails." };
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    return { error: "Falta configurar GMAIL_USER y GMAIL_APP_PASSWORD para enviar emails." };
   }
 
   const supabase = await createClient();
