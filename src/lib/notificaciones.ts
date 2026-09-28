@@ -10,7 +10,9 @@ export type TipoNotificacion =
   | "plan_acreditado"
   | "cierra_pronto"
   | "creditos_por_vencer"
-  | "suscripcion_vencida";
+  | "suscripcion_vencida"
+  | "pago_en_revision"
+  | "pago_rechazado";
 
 export type Notificacion = {
   id: string;
@@ -47,6 +49,8 @@ function hrefDe(tipo: TipoNotificacion, ligaId: string, jornada: number | null) 
     case "sin_prodes":
     case "creditos_por_vencer":
     case "suscripcion_vencida":
+    case "pago_en_revision":
+    case "pago_rechazado":
       return `${base}/planes`;
     default:
       return `${base}/pronosticos`;

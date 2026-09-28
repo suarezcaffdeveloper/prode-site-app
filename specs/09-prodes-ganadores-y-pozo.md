@@ -42,7 +42,7 @@
 - Cliente con service role (todo corre con la sesión del admin y RLS).
 - Destino del pozo acumulado de la última jornada de una liga si termina sin ganadores.
 - Aspectos legales, impositivos y de cumplimiento de juegos con dinero real.
-- Verificación real del pago de créditos (hoy la activación de suscripción es temporal y automática, SPEC 06).
+- Verificación real del pago de créditos (resuelta por SPEC 11: pago por transferencia con verificación automática contra la cuenta de Mercado Pago).
 
 ## Data model
 

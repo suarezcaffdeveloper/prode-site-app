@@ -6,11 +6,31 @@ import { obtenerMembresia } from "@/lib/suscripcion";
 import { Card } from "@/components/ui/card";
 import { MarcadorEstado, MarcadorCodigo } from "@/components/ui/marcador";
 import { Reveal } from "@/components/landing/reveal";
-import { PLANES, formatearPrecio, precioPorProde } from "@/lib/planes";
+import { PLANES, formatearPrecio, obtenerPlan, precioPorProde } from "@/lib/planes";
+import { obtenerDatosCuenta } from "@/lib/pago-config";
+import { formatearPesos } from "@/lib/pozo";
 import { crearGrupo, unirseAGrupo } from "../actions";
 import { CrearGrupoForm, UnirseGrupoForm } from "../grupo-forms";
 import { PlanesSuscripcion } from "../planes-suscripcion";
+import { RefrescarPeriodicamente } from "../refrescar-periodicamente";
+import type { SolicitudVista } from "../pago-actions";
 import { PlanesHero, type DatoHero } from "./planes-hero";
+
+type SolicitudFila = {
+  id: string;
+  plan_slug: string;
+  monto_a_transferir: number;
+  estado:
+    | "esperando_comprobante"
+    | "verificando"
+    | "aprobada"
+    | "pendiente_admin"
+    | "rechazada"
+    | "vencida"
+    | "cancelada";
+  expira_en: string;
+  motivo_rechazo: string | null;
+};
 
 export default async function LigaPlanesPage({
   params,
@@ -36,6 +56,30 @@ export default async function LigaPlanesPage({
 
   const tieneSuscripcionActiva = membresia?.estado_suscripcion === "activa";
 
+  // Último intento de compra del usuario en esta liga (SPEC 11). Se piden solo
+  // las columnas que el usuario puede leer: el detalle interno de la
+  // verificación no se le expone.
+  const { data: ultimaSolicitud } = await supabase
+    .from("solicitudes_pago")
+    .select("id, plan_slug, monto_a_transferir, estado, expira_en, motivo_rechazo")
+    .eq("liga_id", id)
+    .eq("usuario_id", user!.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<SolicitudFila>();
+
+  const solicitudAbierta: SolicitudVista | null =
+    ultimaSolicitud?.estado === "esperando_comprobante" &&
+    new Date(ultimaSolicitud.expira_en).getTime() > Date.now()
+      ? {
+          id: ultimaSolicitud.id,
+          planSlug: ultimaSolicitud.plan_slug,
+          montoATransferir: Number(ultimaSolicitud.monto_a_transferir),
+          expiraEn: ultimaSolicitud.expira_en,
+        }
+      : null;
+  const planSolicitud = ultimaSolicitud ? obtenerPlan(ultimaSolicitud.plan_slug) : undefined;
+  const cuenta = obtenerDatosCuenta();
 
   // RLS en "grupos" ya limita el resultado a los subgrupos donde el usuario
   // es creador o miembro (ver policy grupos_select_miembro_o_admin), así que
@@ -112,23 +156,55 @@ export default async function LigaPlanesPage({
           </p>
         )}
 
-        {membresia?.estado_suscripcion === "pendiente" && (
-          <p className="rounded-lg bg-amber-500/10 p-4 text-sm text-amber-700">
-            Ya recibimos tu comprobante y lo estamos revisando. En cuanto lo
-            confirmemos, tu suscripción pasa a <strong>activa</strong> y vas a
-            poder cargar tus pronósticos y crear o unirte a subgrupos.
-          </p>
-        )}
-
         {membresia?.estado_suscripcion === "inactiva" && (
           <p className="rounded-lg bg-coral-500/10 p-4 text-sm text-coral-700">
-            Tu suscripción está inactiva. Elegí un plan de nuevo y subí el
-            comprobante para reactivarla.
+            Tu suscripción está inactiva. Elegí un plan de nuevo, transferí y
+            subí el comprobante para reactivarla.
           </p>
         )}
       </Card>
 
-      {!tieneSuscripcionActiva && <PlanesSuscripcion ligaId={liga.id} />}
+      {ultimaSolicitud && planSolicitud && (
+        <>
+          {ultimaSolicitud.estado === "verificando" && (
+            <>
+              <RefrescarPeriodicamente />
+              <p
+                role="status"
+                className="rounded-2xl border border-line bg-chalk-50 p-4 text-sm text-ink-600"
+              >
+                <strong className="text-ink-900">Estamos verificando tu pago</strong> de{" "}
+                {formatearPesos(Number(ultimaSolicitud.monto_a_transferir))} ({planSolicitud.nombre}).
+                Apenas se acredite la transferencia, tus prodes se suman solos.
+              </p>
+            </>
+          )}
+          {ultimaSolicitud.estado === "pendiente_admin" && (
+            <p
+              role="status"
+              className="rounded-2xl bg-amber-500/10 p-4 text-sm text-amber-700"
+            >
+              <strong>Tu pago está en revisión.</strong> No pudimos verificarlo de forma
+              automática, así que lo revisa una persona del equipo. Te avisamos apenas esté
+              acreditado.
+            </p>
+          )}
+          {ultimaSolicitud.estado === "rechazada" && (
+            <p role="alert" className="rounded-2xl bg-coral-500/10 p-4 text-sm text-coral-700">
+              <strong>Tu último pago fue rechazado.</strong>{" "}
+              {ultimaSolicitud.motivo_rechazo ?? ""} Podés elegir un plan y volver a intentar.
+            </p>
+          )}
+        </>
+      )}
+
+      {!tieneSuscripcionActiva && (
+        <PlanesSuscripcion
+          ligaId={liga.id}
+          cuenta={cuenta}
+          solicitudAbierta={solicitudAbierta}
+        />
+      )}
 
       {tieneSuscripcionActiva && (
         <div id="subgrupos" className="flex scroll-mt-40 flex-col gap-6 lg:gap-8">
@@ -229,7 +305,14 @@ export default async function LigaPlanesPage({
         </div>
       )}
 
-      {tieneSuscripcionActiva && <PlanesSuscripcion ligaId={liga.id} recompra />}
+      {tieneSuscripcionActiva && (
+        <PlanesSuscripcion
+          ligaId={liga.id}
+          recompra
+          cuenta={cuenta}
+          solicitudAbierta={solicitudAbierta}
+        />
+      )}
     </div>
   );
 }

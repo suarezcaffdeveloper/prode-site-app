@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // El comprobante de pago (hasta 5 MB) viaja dentro del server action
-  // elegirPlan; el límite por defecto de 1 MB lo rechazaba con una excepción.
+  // enviarComprobante; el límite por defecto de 1 MB lo rechazaba con una excepción.
   experimental: {
     serverActions: { bodySizeLimit: "6mb" },
   },
