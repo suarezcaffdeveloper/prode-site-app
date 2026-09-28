@@ -82,7 +82,7 @@ export async function elegirPlan(
     return { error: "No pudimos registrar tu solicitud. Intentá de nuevo." };
   }
 
-  revalidatePath(`/ligas/${ligaId}`);
+  revalidatePath(`/ligas/${ligaId}`, "layout");
   return { success: true };
 }
 
@@ -133,7 +133,7 @@ export async function crearGrupo(
     .from("membresias_grupo")
     .insert({ grupo_id: grupoId, usuario_id: user.id });
 
-  revalidatePath(`/ligas/${ligaId}`);
+  revalidatePath(`/ligas/${ligaId}`, "layout");
   redirect(`/grupos/${grupoId}`);
 }
 
@@ -162,6 +162,6 @@ export async function unirseAGrupo(
     return { error: "No pudimos procesar el código. Intentá de nuevo." };
   }
 
-  revalidatePath(`/ligas/${ligaId}`);
+  revalidatePath(`/ligas/${ligaId}`, "layout");
   redirect(`/grupos/${grupoId}`);
 }

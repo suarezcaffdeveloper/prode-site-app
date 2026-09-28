@@ -110,7 +110,7 @@ export default async function FixtureLigaPage({
                   </p>
                   {esActiva ? (
                     <Link
-                      href={tieneSuscripcionActiva ? `/ligas/${id}/pronosticos` : `/ligas/${id}`}
+                      href={tieneSuscripcionActiva ? `/ligas/${id}/pronosticos` : `/ligas/${id}/planes`}
                       className="inline-flex shrink-0 items-center gap-1 rounded-full bg-pitch-700 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-chalk-0 hover:bg-pitch-600"
                     >
                       Jugar prode →

@@ -175,7 +175,7 @@ export default async function PronosticosLigaPage({
         <Card className="p-6">
           <p className="rounded-lg bg-amber-500/10 p-4 text-sm text-amber-700">
             Necesitás una suscripción activa en esta liga para cargar pronósticos.{" "}
-            <Link href={`/ligas/${id}`} className="font-medium underline">
+            <Link href={`/ligas/${id}/planes`} className="font-medium underline">
               Elegir un plan →
             </Link>
           </p>

@@ -24,7 +24,13 @@ function formatearRestante(msRestante: number): string {
 // El primer render (servidor y cliente antes de montar) muestra la fecha
 // fija para no arriesgar un mismatch de hidratación contra "now()"; recién
 // después de montar en el cliente pasa a la cuenta regresiva en vivo.
-export function CuentaRegresivaCierre({ horaCierre }: { horaCierre: string }) {
+export function CuentaRegresivaCierre({
+  horaCierre,
+  variante = "default",
+}: {
+  horaCierre: string;
+  variante?: "default" | "hero";
+}) {
   const [montado, setMontado] = useState(false);
   const [ahora, setAhora] = useState(() => Date.now());
   const cierre = new Date(horaCierre);
@@ -38,6 +44,14 @@ export function CuentaRegresivaCierre({ horaCierre }: { horaCierre: string }) {
   const texto = montado
     ? formatearRestante(cierre.getTime() - ahora)
     : `${formatearFecha(cierre)}hs`;
+
+  if (variante === "hero") {
+    return (
+      <span className="font-display text-xl font-bold leading-tight tabular-nums text-chalk-0">
+        {texto}
+      </span>
+    );
+  }
 
   return (
     <span className="inline-flex items-center gap-1.5 font-mono text-sm font-bold tabular-nums text-pitch-700">

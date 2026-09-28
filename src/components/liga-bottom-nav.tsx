@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart2, Calendar, ClipboardList, Ticket } from "lucide-react";
+import { BarChart2, Calendar, ClipboardList, Home, Ticket } from "lucide-react";
 
 export function LigaBottomNav({ ligaId }: { ligaId: string }) {
   const pathname = usePathname();
@@ -19,8 +19,14 @@ export function LigaBottomNav({ ligaId }: { ligaId: string }) {
       icon: Calendar,
     },
     {
-      label: "Planes",
+      label: "Inicio",
       href: `/ligas/${ligaId}`,
+      icon: Home,
+      central: true,
+    },
+    {
+      label: "Planes",
+      href: `/ligas/${ligaId}/planes`,
       icon: Ticket,
     },
     {
@@ -52,7 +58,19 @@ export function LigaBottomNav({ ligaId }: { ligaId: string }) {
               }`}
               aria-current={activo ? "page" : undefined}
             >
-              <Icon className="h-5 w-5" aria-hidden="true" />
+              {item.central ? (
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                    activo ? "bg-pitch-900 text-lime-300" : "bg-chalk-100 text-ink-600"
+                  }`}
+                >
+                  <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                </span>
+              ) : (
+                <span className="flex h-8 w-8 items-center justify-center">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+              )}
               <span>{item.label}</span>
               <span
                 className={`h-1 w-1 rounded-full ${activo ? "bg-pitch-700" : "bg-transparent"}`}

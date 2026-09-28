@@ -81,6 +81,7 @@ export async function crearCarton(
   if (error) return { error: mensajeErrorRpc(error) };
 
   revalidatePath(`/ligas/${ligaId}/pronosticos`);
+  revalidatePath(`/ligas/${ligaId}`);
   return {};
 }
 
