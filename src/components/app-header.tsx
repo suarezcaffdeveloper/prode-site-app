@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { Bell, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
+import { CampanaNotificaciones } from "@/components/campana-notificaciones";
 import { cerrarSesion } from "@/lib/auth-actions";
+import type { Notificacion } from "@/lib/notificaciones";
 
 function inicialesDe(nombre: string | null, email: string) {
   if (nombre && nombre.trim().length > 0) {
@@ -15,11 +17,13 @@ function inicialesDe(nombre: string | null, email: string) {
 
 export function AppHeader({
   usuario,
+  notificaciones,
 }: {
-  usuario: { nombre: string | null; email: string };
+  usuario: { id: string; nombre: string | null; email: string };
+  notificaciones: Notificacion[];
 }) {
   return (
-    <header className="border-b border-line bg-chalk-0">
+    <header className="relative border-b border-line bg-chalk-0">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
         <div className="flex items-center gap-3">
           <Link href="/ligas">
@@ -35,12 +39,7 @@ export function AppHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          <span
-            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-400"
-            aria-hidden="true"
-          >
-            <Bell className="h-5 w-5" />
-          </span>
+          <CampanaNotificaciones usuarioId={usuario.id} iniciales={notificaciones} />
 
           <span
             className="flex h-9 w-9 items-center justify-center rounded-full bg-pitch-900 font-display text-xs font-bold text-lime-300"

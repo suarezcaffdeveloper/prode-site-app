@@ -115,6 +115,7 @@ html {
   --animate-pop-in: pop-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-pulse-ring: pulse-ring 2.2s ease-out infinite;
   --animate-bell: bell 3.2s ease-in-out infinite;
+  --animate-globito: globito 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-toast: toast 3.6s ease-in-out both;
   --animate-bounce-soft: bounce-soft 2s ease-in-out infinite;
 }
@@ -159,6 +160,10 @@ html {
   78% { transform: rotate(9deg); }
   84% { transform: rotate(-6deg); }
   90% { transform: rotate(3deg); }
+}
+@keyframes globito {
+  from { opacity: 0; transform: translateY(-6px) scale(0.92); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes toast {
   0% { opacity: 0; transform: translateY(10px) scale(0.92); }
