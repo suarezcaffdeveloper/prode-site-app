@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.128.0",
+    "@google/genai": "^2.24.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
     "lucide-react": "^1.48.0",

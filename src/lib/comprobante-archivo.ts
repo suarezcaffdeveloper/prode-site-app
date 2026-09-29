@@ -1,6 +1,6 @@
 // Validación del archivo de comprobante por su contenido (firma de bytes), no
 // por el MIME que reporta el navegador, que puede falsificarse. Solo se
-// aceptan los formatos que la API de visión de Claude puede leer.
+// aceptan los formatos que la API de visión de Gemini puede leer.
 
 export type MediaTypeImagen = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 

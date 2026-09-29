@@ -10,7 +10,7 @@
 - **Solicitud de pago (`solicitudes_pago`).** Cada intento de compra es una solicitud con un estado explícito: `esperando_comprobante → verificando → aprobada | pendiente_admin | rechazada`, más `vencida` y `cancelada`. Un usuario tiene como máximo **una solicitud abierta** (`esperando_comprobante`) por liga; elegir otro plan cancela la anterior.
 - **Monto único por solicitud.** El usuario no paga el precio de lista redondo sino `precio del plan + centavos únicos` (ej. plan de $5.000 → $5.000,37). Los centavos (0,01–0,99) se eligen al azar entre los que no estén en uso por otra solicitud activa; es la llave que vincula una transferencia con una solicitud concreta, incluso si dos usuarios pagan el mismo plan el mismo día. El monto queda reservado **48 horas**.
 - **Datos de la cuenta y monto en pantalla.** El checkout (`checkout-plan.tsx`) muestra el monto exacto a transferir (con botón "Copiar"), alias, CBU y titular de la cuenta de Mercado Pago del prode, y una cuenta regresiva de la reserva. Los datos de la cuenta salen de variables de entorno y reemplazan el `DATOS_TRANSFERENCIA` hardcodeado de `src/lib/planes.ts`.
-- **Lectura del comprobante con IA (`src/lib/comprobante-ia.ts`).** Se envía la imagen a la API de Claude (visión, modelo configurable por `ANTHROPIC_MODEL`, por defecto `claude-sonnet-5`) mediante el SDK oficial `@anthropic-ai/sdk` y se fuerza una salida estructurada con `output_config.format` (JSON schema; `effort: "low"`; sin parámetros de muestreo, que Sonnet 5 no admite). La IA **solo extrae datos**; nunca decide si se aprueba. Campos: `es_comprobante`, `legible`, `monto`, `moneda`, `fecha` y `hora` (hora local de Argentina; la hora puede faltar), `remitente_nombre`, `remitente_documento`, `destinatario_nombre`, `destinatario_alias`, `destinatario_cbu`, `numero_operacion`, `banco_o_billetera`, `senales_sospechosas[]` (texto editado, capturas de pantalla de pantalla, inconsistencias visuales) y `confianza` (0–1). La respuesta se valida con un parser estricto; si no cumple el esquema, la solicitud pasa a `pendiente_admin` con motivo `extraccion_invalida`.
+- **Lectura del comprobante con IA (`src/lib/comprobante-ia.ts`).** Se envía la imagen a la API de Gemini (visión, modelo configurable por `GEMINI_MODEL`, por defecto `gemini-flash-latest`) mediante el SDK oficial `@google/genai` y se fuerza una salida estructurada con `responseMimeType`/`responseSchema` (JSON schema). La IA **solo extrae datos**; nunca decide si se aprueba. Campos: `es_comprobante`, `legible`, `monto`, `moneda`, `fecha` y `hora` (hora local de Argentina; la hora puede faltar), `remitente_nombre`, `remitente_documento`, `destinatario_nombre`, `destinatario_alias`, `destinatario_cbu`, `numero_operacion`, `banco_o_billetera`, `senales_sospechosas[]` (texto editado, capturas de pantalla de pantalla, inconsistencias visuales) y `confianza` (0–1). La respuesta se valida con un parser estricto; si no cumple el esquema, la solicitud pasa a `pendiente_admin` con motivo `extraccion_invalida`.
 - **Lectura de la cuenta de Mercado Pago.** Credenciales de la cuenta dedicada al prode (`MP_ACCESS_TOKEN`), leídas solo desde el servidor. Tres vías que alimentan el mismo ledger `movimientos_mp`:
   1. **Webhook** `POST /api/webhooks/mercadopago`: valida la firma `x-signature` con `MP_WEBHOOK_SECRET`, consulta `GET /v1/payments/{id}`, hace upsert idempotente del movimiento y dispara la conciliación de solicitudes en `verificando`.
   2. **Consulta directa al subir el comprobante:** antes de dejar la solicitud en espera, se buscan por API los pagos recientes (`/v1/payments/search`, últimas horas) para no depender de que el webhook ya haya llegado.
@@ -177,7 +177,7 @@ Conventions:
 - El bucket `comprobantes` y su convención de path (`${usuario_id}/${liga_id}/${uuid}.${ext}`) de SPEC 06 se reutilizan sin cambios. La imagen se sigue sirviendo con signed URL.
 - `movimientos_mp.raw` guarda la respuesta completa de Mercado Pago para auditoría y para poder re-evaluar reglas sin volver a consultar la API. `solicitudes_pago.extraccion` guarda lo que leyó la IA, de modo que ninguna decisión depende de volver a llamar a un modelo.
 - Zona horaria: todas las fechas se guardan en `timestamptz`; la comparación de R4 se hace en `America/Argentina/Buenos_Aires` porque los comprobantes muestran hora local sin zona.
-- Variables de entorno nuevas (todas solo servidor): `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `PAGO_ALIAS`, `PAGO_CBU`, `PAGO_TITULAR`.
+- Variables de entorno nuevas (todas solo servidor): `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `PAGO_ALIAS`, `PAGO_CBU`, `PAGO_TITULAR`.
 
 ## Implementation plan
 
@@ -213,7 +213,7 @@ Manual test end-to-end (lo ejecuta el usuario): elegir un plan → verificar el 
 - [ ] El usuario ve el estado de su solicitud (esperando, verificando, acreditado, en revisión, rechazado, vencido) y recibe una notificación in-app al ser acreditado, derivado a revisión o rechazado, una sola vez por evento.
 - [ ] El webhook rechaza (401) notificaciones con firma inválida y el cron rechaza llamadas sin `CRON_SECRET`.
 - [ ] Un egreso, devolución o contracargo sobre un movimiento ya usado genera una alerta visible para el admin y no modifica créditos por sí solo.
-- [ ] Ninguna credencial (`MP_ACCESS_TOKEN`, `ANTHROPIC_API_KEY`, service role) llega al cliente ni aparece en el bundle.
+- [ ] Ninguna credencial (`MP_ACCESS_TOKEN`, `GEMINI_API_KEY`, service role) llega al cliente ni aparece en el bundle.
 
 ## Decisions
 
@@ -221,7 +221,7 @@ Manual test end-to-end (lo ejecuta el usuario): elegir un plan → verificar el 
 - **Yes:** la fuente de verdad es el **movimiento real en la cuenta de Mercado Pago**; el comprobante solo sirve para vincular el pago con un usuario y con una solicitud. Una imagen editada no acredita nada si la plata no entró.
 - **Yes:** monto único con centavos como llave de vinculación. Elimina la ambigüedad entre dos usuarios que pagan lo mismo el mismo día sin exigir un dato extra al usuario; el costo es que el usuario transfiere unos centavos distinto del precio de lista, y que hay a lo sumo 99 solicitudes simultáneas por precio base.
 - **Yes:** webhook + consulta directa + reporte de respaldo. El webhook da inmediatez, la consulta directa cubre la carrera "comprobante antes que webhook" y el reporte cubre lo que el webhook pierda y trae los egresos.
-- **Yes:** Claude Sonnet 5 con visión, configurable por `ANTHROPIC_MODEL`. El volumen de comprobantes es bajo y la precisión al leer capturas de distintos bancos y billeteras importa más que el costo por imagen (una fracción de centavo).
+- **Yes:** Gemini con visión (`gemini-flash-latest` por defecto), configurable por `GEMINI_MODEL`. Elegido en lugar de Claude por preferencia explícita (evitar el costo de una API de pago de Anthropic); el nivel gratuito de Gemini alcanza para el volumen bajo de comprobantes esperado, y para más precisión alcanza con pasar `GEMINI_MODEL=gemini-pro-latest`.
 - **Yes:** comprobante obligatorio y ambas fuentes deben coincidir, tal como se definió en el diseño original, aunque el movimiento con centavos únicos ya sería prueba suficiente. Se prioriza la doble verificación; relajarlo más adelante es un cambio de reglas en `conciliacion.ts`, no de arquitectura.
 - **Yes:** no se exige que el remitente sea el usuario registrado. Pagos de terceros, nombres abreviados y cuentas compartidas son habituales; el monto único ya ata el pago a la solicitud.
 - **Yes:** ante cualquier duda o falla de infraestructura (IA caída, sin movimiento, extracción inválida) se falla hacia `pendiente_admin`, no hacia aprobar ni hacia rechazar.
@@ -230,7 +230,7 @@ Manual test end-to-end (lo ejecuta el usuario): elegir un plan → verificar el 
 - **No:** auto-rechazo. Rechazar a un usuario que sí pagó por un falso negativo de la IA es peor que pedirle al admin una revisión.
 - **No:** Checkout Pro / QR de Mercado Pago en esta spec. Sería más robusto (el pago se confirma dentro de MP, sin comprobante ni IA) pero cambia el flujo definido; queda como alternativa futura si el spike muestra que la lectura de transferencias directas no es confiable.
 - **No:** revocar créditos automáticamente ante contracargos: una alerta al admin evita quitar prodes ya jugados por un error de conciliación.
-- **Yes:** SDK oficial `@anthropic-ai/sdk` para llamar a Claude (única dependencia nueva); `fetch` para Mercado Pago, igual que `src/lib/email.ts` para Resend.
+- **Yes:** SDK oficial `@google/genai` para llamar a Gemini (única dependencia nueva); `fetch` para Mercado Pago, igual que `src/lib/email.ts` para Resend.
 
 ## Risks
 
